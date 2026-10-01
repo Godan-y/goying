@@ -1,0 +1,107 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function admin() { return signedIn() && request.auth.token.admin == true; }
+    function approvedAvailable() {
+      return (resource.data.approuvee == true ||
+              resource.data.approuvee == "true" ||
+              resource.data.approuvee == 1 ||
+              resource.data.statut in ["approuvee", "approuve"]) &&
+             resource.data.disponibilite != false &&
+             !(resource.data.disponibilite in ["indisponible", "reservee", "réservée", "booked"]) &&
+             !(resource.data.statut in ["indisponible", "reservee", "réservée"]);
+    }
+    function assignedApprovedProvider() {
+      return signedIn() &&
+             resource.data.providerCollection == "providers" &&
+             resource.data.providerId is string &&
+             get(/databases/$(database)/documents/providers/$(resource.data.providerId)).data.verified == true &&
+             get(/databases/$(database)/documents/providers/$(resource.data.providerId)).data.email == request.auth.token.email;
+    }
+
+    // The public catalogue has one canonical source. Clients must query only
+    // documents that satisfy this predicate; unavailable/unapproved homes never read.
+    match /maisons/{maisonId} {
+      allow get, list: if approvedAvailable() || admin();
+      allow create, update, delete: if admin();
+    }
+
+    match /propertyBookings/{bookingId} {
+      allow get, list: if admin() || (signedIn() && resource.data.clientId == request.auth.uid);
+      // Created only by the Admin-SDK endpoint. This blocks forged property snapshots,
+      // availability changes, status updates, and cross-account bookings from browsers.
+      allow create, update, delete: if admin();
+    }
+
+    match /propertySubmissions/{submissionId} {
+      allow get, list: if admin() || (signedIn() && resource.data.reporterUid == request.auth.uid);
+      // Created by the authenticated server endpoint; submitted homes are never public.
+      allow create, update, delete: if admin();
+    }
+
+    // Public service catalogues remain readable; only admins change availability/listings.
+    match /vehicles/{id} { allow read: if true; allow write: if admin(); }
+    match /chauffeurs/{id} { allow read: if resource.data.verified == true || admin(); allow write: if admin(); }
+    match /providers/{id} {
+      allow read: if resource.data.verified == true || admin();
+      allow update: if admin() || (
+        signedIn() &&
+        resource.data.verified == true &&
+        resource.data.email == request.auth.token.email &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "name", "phone", "country", "city", "commune", "bio", "specialty",
+          "priceRate", "avatarUrl", "portfolio"
+        ])
+      );
+      allow create, delete: if admin();
+    }
+
+    // Legacy bookings retain client access without exposing other customers. New property
+    // bookings use propertyBookings above and are not browser-writable.
+    match /bookings/{id} {
+      allow read: if admin() || (signedIn() && resource.data.clientId == request.auth.uid) || assignedApprovedProvider();
+      allow create: if signedIn() && request.resource.data.clientId == request.auth.uid;
+      allow update: if admin() || (signedIn() && resource.data.clientId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(["acknowledgedByClient"]));
+      allow update: if assignedApprovedProvider() &&
+        request.resource.data.status == "À valider" &&
+        request.resource.data.providerCompletionRequested == true &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          "status", "providerCompletionRequested", "providerCompletedAt"
+        ]);
+      allow delete: if admin();
+    }
+    match /carBookings/{id} {
+      allow read: if admin() || (signedIn() && resource.data.clientId == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.clientId == request.auth.uid;
+      allow update, delete: if admin() || (signedIn() && resource.data.clientId == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(["acknowledgedByClient"]));
+    }
+
+    match /users/{id} {
+      allow get, list: if admin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow create, update: if signedIn() && request.resource.data.uid == request.auth.uid;
+      allow delete: if admin();
+    }
+    match /professionalAccounts/{id} {
+      allow get, list: if admin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow create: if signedIn() && id == request.auth.uid && request.resource.data.uid == request.auth.uid;
+      allow update: if admin() || (
+        signedIn() &&
+        resource.data.uid == request.auth.uid &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(["fullName", "specialty"])
+      );
+      allow delete: if admin();
+    }
+    match /professionalApplications/{id} {
+      allow get: if admin() || (signedIn() && resource.data.session.uid == request.auth.uid);
+      allow list: if admin() || (signedIn() && resource.data.session.uid == request.auth.uid);
+      allow create: if signedIn() && request.resource.data.session.uid == request.auth.uid;
+      allow update, delete: if admin();
+    }
+    match /reviews/{id} { allow read: if true; allow write: if admin(); }
+    match /properties/{id} { allow read: if admin(); allow write: if admin(); }
+    match /{document=**} { allow read, write: if admin(); }
+  }
+}

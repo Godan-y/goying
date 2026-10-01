@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title">
+  <title>Silhouette de prestataire</title>
+  <circle cx="128" cy="128" r="128" fill="#2563eb"/>
+  <circle cx="128" cy="94" r="43" fill="#dbeafe"/>
+  <path d="M45 231c6-49 39-78 83-78s77 29 83 78" fill="#dbeafe"/>
+</svg>

@@ -1,0 +1,6 @@
+{
+  "name": "Goying",
+  "description": "Plateforme multiservices de confiance reliant particuliers et prestataires qualifiés pour l'immobilier, le transport et les services à la personne.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

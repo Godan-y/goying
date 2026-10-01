@@ -1,0 +1,96 @@
+{
+  "collections": {
+    "users": {
+      "schema": {
+        "email": "string",
+        "fullName": "string",
+        "role": "string",
+        "specialty": "string?"
+      }
+    },
+    "bookings": {
+      "schema": {
+        "id": "string",
+        "serviceType": "string",
+        "itemName": "string",
+        "date": "string",
+        "status": "string",
+        "details": "string",
+        "costInfo": "string",
+        "userEmail": "string?"
+      }
+    },
+    "properties": {
+      "schema": {
+        "id": "string",
+        "title": "string",
+        "type": "string",
+        "category": "string",
+        "price": "number",
+        "currency": "string",
+        "address": "string",
+        "bedrooms": "number?",
+        "bathrooms": "number?",
+        "surface": "number",
+        "imageUrl": "string",
+        "description": "string",
+        "features": "array",
+        "rating": "number",
+        "reviewsCount": "number",
+        "contactName": "string"
+      }
+    },
+    "vehicles": {
+      "schema": {
+        "id": "string",
+        "brand": "string",
+        "model": "string",
+        "category": "string",
+        "pricePerDay": "number",
+        "currency": "string",
+        "transmission": "string",
+        "fuel": "string",
+        "seats": "number",
+        "imageUrl": "string",
+        "rating": "number",
+        "reviewsCount": "number",
+        "features": "array",
+        "isAvailable": "boolean"
+      }
+    },
+    "chauffeurs": {
+      "schema": {
+        "id": "string",
+        "name": "string",
+        "avatarUrl": "string",
+        "rating": "number",
+        "reviewsCount": "number",
+        "pricePerKm": "number",
+        "currency": "string",
+        "vehicleModel": "string",
+        "experienceYears": "number",
+        "zones": "array",
+        "bio": "string",
+        "verified": "boolean",
+        "phone": "string"
+      }
+    },
+    "providers": {
+      "schema": {
+        "id": "string",
+        "name": "string",
+        "specialty": "string",
+        "avatarUrl": "string",
+        "rating": "number",
+        "reviewsCount": "number",
+        "priceRate": "string",
+        "bio": "string",
+        "location": "string",
+        "verified": "boolean",
+        "skills": "array",
+        "portfolio": "array?",
+        "experienceYears": "number"
+      }
+    }
+  }
+}
