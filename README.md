@@ -22,6 +22,9 @@ View your app in AI Studio: https://ai.studio/apps/4478b52d-b52c-4c6e-a8b5-0237c
    ```powershell
    npm.cmd run dev
    ```
+git add .
+git commit -m "Description de mes modifications"
+git push
 
 ## Numéros WhatsApp
 

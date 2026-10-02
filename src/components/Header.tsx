@@ -51,7 +51,6 @@ export default function Header({
 
         {/* Desktop Navigation Menu */}
         <div className="hidden md:flex items-center gap-2" id="header-desktop-nav">
-          <LanguageSelector />
           <button
             onClick={onOpenPropertySubmission}
             className="rounded-full border border-orange-200 bg-white px-2.5 py-2 text-xs font-semibold text-orange-700 hover:bg-orange-50 lg:px-3"
@@ -124,11 +123,11 @@ export default function Header({
               <span>Se connecter</span>
             </button>
           )}
+          <LanguageSelector />
         </div>
 
         {/* Mobile Navigation Controls */}
         <div className="flex md:hidden items-center space-x-2" id="header-mobile-controls">
-          <LanguageSelector />
           {/* Always show Bookings Tracker if there are bookings to let mobile users check bookings easily */}
           {bookings.length > 0 && (
             <button
@@ -153,6 +152,7 @@ export default function Header({
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
+          <LanguageSelector />
         </div>
       </div>
 

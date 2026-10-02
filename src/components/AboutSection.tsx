@@ -1,4 +1,4 @@
-import { X, Target, Heart, ShieldCheck, Star } from "lucide-react";
+import { X, Target, Heart, ShieldCheck, MessageCircle, GraduationCap, Code2 } from "lucide-react";
 import { motion } from "motion/react";
 
 interface AboutSectionProps {
@@ -78,6 +78,37 @@ export default function AboutSection({ isOpen, onClose }: AboutSectionProps) {
               </div>
             </div>
           </div>
+
+          <section className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-blue-50 p-4">
+              <div className="flex items-start gap-3">
+                <img
+                  src="/gode-mukeng-mukanz.png"
+                  alt="Gode Mukeng Mukanz, développeur web"
+                  className="h-16 w-16 shrink-0 rounded-2xl border-2 border-white object-cover shadow-md"
+                />
+                <div>
+                  <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600"><Code2 className="h-3.5 w-3.5" />Développement web</p>
+                  <h3 className="mt-0.5 text-sm font-bold text-slate-900">Gode Mukeng Mukanz</h3>
+                  <p className="mt-1 flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-600">
+                    <GraduationCap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-600" />
+                    Licencié en gestion informatique à l'Université Pédagogique Nationale.
+                  </p>
+                </div>
+              </div>
+              <p className="mt-3 text-xs leading-relaxed text-slate-600">
+                Vous recherchez un site web moderne, rapide et adapté à votre activité ? Gode accompagne les entreprises et porteurs de projets dans la création de plateformes professionnelles, claires et pensées pour convertir vos visiteurs en clients.
+              </p>
+              <p className="mt-2 text-xs font-semibold text-slate-800">WhatsApp : +243 857068014</p>
+              <a
+                href="https://wa.me/243857068014?text=Bonjour%20Gode%2C%20je%20souhaite%20discuter%20d%27un%20projet%20de%20site%20web."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-emerald-500 sm:w-auto"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Discuter de mon projet sur WhatsApp
+              </a>
+          </section>
         </div>
 
         {/* Call to action (Shrink-0 / Bottom-anchored) */}

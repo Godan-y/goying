@@ -860,7 +860,7 @@ export function CarRentalView({ vehicles, onAddBooking, session }: CarRentalView
 /* ========================================== */
 interface ChauffeurViewProps {
   chauffeurs: Chauffeur[];
-  onAddBooking: (booking: Booking) => void;
+  onAddBooking: (booking: Booking) => Promise<void>;
   session: UserSession;
 }
 
@@ -876,7 +876,7 @@ export function ChauffeurView({ chauffeurs, onAddBooking, session }: ChauffeurVi
   const [rideSuccess, setRideSuccess] = useState(false);
   const [lightbox, setLightbox] = useState<{ images: string[]; alt: string } | null>(null);
 
-  const handleHire = (e: React.FormEvent) => {
+  const handleHire = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedChauffeur || !rideDate) return;
     const internationalPhone = toInternationalPhone(clientWhatsApp);
@@ -905,17 +905,21 @@ export function ChauffeurView({ chauffeurs, onAddBooking, session }: ChauffeurVi
       provider: selectedChauffeur,
     };
 
-    onAddBooking(newBooking);
-    setRideSuccess(true);
-    setTimeout(() => {
-      setRideSuccess(false);
-      setSelectedChauffeur(null);
-      setRideDetails("");
-      setRideDate("");
-      setClientWhatsApp("");
-      setServiceAddress("");
-      setServiceLocationType("Maison");
-    }, 2500);
+    try {
+      await onAddBooking(newBooking);
+      setRideSuccess(true);
+      setTimeout(() => {
+        setRideSuccess(false);
+        setSelectedChauffeur(null);
+        setRideDetails("");
+        setRideDate("");
+        setClientWhatsApp("");
+        setServiceAddress("");
+        setServiceLocationType("Maison");
+      }, 2500);
+    } catch (error) {
+      setPhoneError(error instanceof Error ? error.message : "La réservation n'a pas pu être enregistrée.");
+    }
   };
 
   const normalizedChauffeurSearch = chauffeurSearch.trim().toLowerCase();
@@ -1035,10 +1039,12 @@ export function ChauffeurView({ chauffeurs, onAddBooking, session }: ChauffeurVi
               </div>
 
               <button
+                type="button"
+                disabled={ch.id === session.providerListing?.id}
                 onClick={() => setSelectedChauffeur(ch)}
-                className="whitespace-nowrap rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 text-xs font-bold shadow-md shadow-indigo-100 transition-all"
+                className="whitespace-nowrap rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-indigo-100 transition-all hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none"
               >
-                Réserver Chauffeur
+                {ch.id === session.providerListing?.id ? "Votre profil" : "Réserver Chauffeur"}
               </button>
             </div>
           </div>
@@ -1199,7 +1205,7 @@ export function ChauffeurView({ chauffeurs, onAddBooking, session }: ChauffeurVi
 /* ========================================== */
 interface SecondaryServicesViewProps {
   providers: SecondaryProvider[];
-  onAddBooking: (booking: Booking) => void;
+  onAddBooking: (booking: Booking) => Promise<void>;
   session: UserSession;
 }
 
@@ -1237,7 +1243,7 @@ export function SecondaryServicesView({ providers, onAddBooking, session }: Seco
     ].some((value) => value.toLowerCase().includes(normalizedProviderSearch))
   );
 
-  const handleBookingSubmit = (e: React.FormEvent) => {
+  const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProvider || !bookingDate) return;
     const internationalPhone = toInternationalPhone(clientWhatsApp);
@@ -1266,18 +1272,22 @@ export function SecondaryServicesView({ providers, onAddBooking, session }: Seco
       provider: selectedProvider,
     };
 
-    onAddBooking(newBooking);
-    setBookingSuccess(true);
-    setTimeout(() => {
-      setBookingSuccess(false);
-      setSelectedProvider(null);
-      setBookingDate("");
-      setBookingTime("");
-      setBookingNotes("");
-      setClientWhatsApp("");
-      setServiceAddress("");
-      setServiceLocationType("Maison");
-    }, 2500);
+    try {
+      await onAddBooking(newBooking);
+      setBookingSuccess(true);
+      setTimeout(() => {
+        setBookingSuccess(false);
+        setSelectedProvider(null);
+        setBookingDate("");
+        setBookingTime("");
+        setBookingNotes("");
+        setClientWhatsApp("");
+        setServiceAddress("");
+        setServiceLocationType("Maison");
+      }, 2500);
+    } catch (error) {
+      setPhoneError(error instanceof Error ? error.message : "La réservation n'a pas pu être enregistrée.");
+    }
   };
 
   return (
@@ -1415,10 +1425,12 @@ export function SecondaryServicesView({ providers, onAddBooking, session }: Seco
               </div>
 
               <button
+                type="button"
+                disabled={prov.id === session.providerListing?.id}
                 onClick={() => setSelectedProvider(prov)}
-                className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-slate-800 sm:w-auto sm:py-2"
+                className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none sm:w-auto sm:py-2"
               >
-                Prendre RDV
+                {prov.id === session.providerListing?.id ? "Votre profil" : "Prendre RDV"}
               </button>
             </div>
           </div>

@@ -189,6 +189,10 @@ export default function App() {
 
   // Handle Dynamic Bookings Addition
   const handleAddBooking = async (newBooking: Booking) => {
+    if (session.role === "prestataire" && newBooking.providerId === session.providerListing?.id) {
+      throw new Error("Vous ne pouvez pas prendre rendez-vous avec votre propre profil prestataire.");
+    }
+
     // Save to Firestore
     await firebaseAddBooking(newBooking);
 
