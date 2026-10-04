@@ -480,10 +480,11 @@ export function RealEstateView({ properties, onBookProperty, onRequireLogin, ses
 interface CarRentalViewProps {
   vehicles: Vehicle[];
   onAddBooking: (booking: Booking) => Promise<void>;
+  onRequireLogin: () => void;
   session: UserSession;
 }
 
-export function CarRentalView({ vehicles, onAddBooking, session }: CarRentalViewProps) {
+export function CarRentalView({ vehicles, onAddBooking, onRequireLogin, session }: CarRentalViewProps) {
   const [filterCat, setFilterCat] = useState<string>("Tous");
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [rentDays, setRentDays] = useState(1);
@@ -512,6 +513,11 @@ export function CarRentalView({ vehicles, onAddBooking, session }: CarRentalView
   const handleRent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedVehicle || !rentDate) return;
+    if (!session.isLoggedIn || !session.uid) {
+      setRentError("Connectez-vous à votre compte pour effectuer une réservation.");
+      onRequireLogin();
+      return;
+    }
     if (!clientName.trim()) {
       setRentError("Veuillez renseigner votre nom complet.");
       return;
@@ -563,7 +569,7 @@ export function CarRentalView({ vehicles, onAddBooking, session }: CarRentalView
       }, 2500);
     } catch (error) {
       console.error("Error adding car booking:", error);
-      setRentError("La réservation n'a pas pu être enregistrée. Vérifiez votre connexion et réessayez.");
+      setRentError("La réservation n'a pas pu être enregistrée. Vérifiez que vous êtes connecté à votre compte, puis réessayez.");
     } finally {
       setIsSubmitting(false);
     }
@@ -861,10 +867,11 @@ export function CarRentalView({ vehicles, onAddBooking, session }: CarRentalView
 interface ChauffeurViewProps {
   chauffeurs: Chauffeur[];
   onAddBooking: (booking: Booking) => Promise<void>;
+  onRequireLogin: () => void;
   session: UserSession;
 }
 
-export function ChauffeurView({ chauffeurs, onAddBooking, session }: ChauffeurViewProps) {
+export function ChauffeurView({ chauffeurs, onAddBooking, onRequireLogin, session }: ChauffeurViewProps) {
   const [selectedChauffeur, setSelectedChauffeur] = useState<Chauffeur | null>(null);
   const [chauffeurSearch, setChauffeurSearch] = useState("");
   const [rideDetails, setRideDetails] = useState("");
@@ -879,6 +886,11 @@ export function ChauffeurView({ chauffeurs, onAddBooking, session }: ChauffeurVi
   const handleHire = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedChauffeur || !rideDate) return;
+    if (!session.isLoggedIn || !session.uid) {
+      setPhoneError("Connectez-vous à votre compte pour effectuer une réservation.");
+      onRequireLogin();
+      return;
+    }
     const internationalPhone = toInternationalPhone(clientWhatsApp);
     if (!internationalPhone) {
       setPhoneError(`Numéro WhatsApp invalide. ${internationalPhoneHint}`);
@@ -1206,10 +1218,11 @@ export function ChauffeurView({ chauffeurs, onAddBooking, session }: ChauffeurVi
 interface SecondaryServicesViewProps {
   providers: SecondaryProvider[];
   onAddBooking: (booking: Booking) => Promise<void>;
+  onRequireLogin: () => void;
   session: UserSession;
 }
 
-export function SecondaryServicesView({ providers, onAddBooking, session }: SecondaryServicesViewProps) {
+export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin, session }: SecondaryServicesViewProps) {
   const [activeSpec, setActiveSpec] = useState<"ménagère" | "coiffeur" | "professeur" | "maquilleuse">("ménagère");
   const [providerSearch, setProviderSearch] = useState("");
   const [selectedProvider, setSelectedProvider] = useState<SecondaryProvider | null>(null);
@@ -1246,6 +1259,11 @@ export function SecondaryServicesView({ providers, onAddBooking, session }: Seco
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProvider || !bookingDate) return;
+    if (!session.isLoggedIn || !session.uid) {
+      setPhoneError("Connectez-vous à votre compte pour effectuer une réservation.");
+      onRequireLogin();
+      return;
+    }
     const internationalPhone = toInternationalPhone(clientWhatsApp);
     if (!internationalPhone) {
       setPhoneError(`Numéro WhatsApp invalide. ${internationalPhoneHint}`);

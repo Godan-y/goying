@@ -22,7 +22,6 @@ import {
   addBooking as firebaseAddBooking,
   cancelBooking as firebaseCancelBooking,
   acknowledgeBooking as firebaseAcknowledgeBooking,
-  saveUser,
   onboardProfessional,
   createPropertyBooking,
   submitBookingReview as firebaseSubmitBookingReview,
@@ -76,7 +75,12 @@ export default function App() {
     try {
       const stored = localStorage.getItem("goying_session");
       if (stored) {
-        return JSON.parse(stored);
+        const savedSession = JSON.parse(stored) as UserSession;
+        if (savedSession.email === "invite@goying.com") {
+          localStorage.removeItem("goying_session");
+        } else {
+          return savedSession;
+        }
       }
     } catch (e) {
       console.error(e);
@@ -191,6 +195,9 @@ export default function App() {
 
   // Handle Dynamic Bookings Addition
   const handleAddBooking = async (newBooking: Booking) => {
+    if (!session.isLoggedIn || !session.uid) {
+      throw new Error("Connectez-vous à votre compte pour effectuer une réservation.");
+    }
     if (session.role === "prestataire" && newBooking.providerId === session.providerListing?.id) {
       throw new Error("Vous ne pouvez pas prendre rendez-vous avec votre propre profil prestataire.");
     }
@@ -208,18 +215,6 @@ export default function App() {
           provider.id === newBooking.providerId ? { ...provider, status: "indisponible" } : provider
         ));
       }
-    }
-
-    // Implicit Guest Session Creator (if not logged in, we set a guest session so they see themselves in the header)
-    if (!session.isLoggedIn) {
-      const guestSession: UserSession = {
-        isLoggedIn: true,
-        email: "invite@goying.com",
-        fullName: "Invité Goying",
-        role: "client",
-      };
-      setSession(guestSession);
-      await saveUser(guestSession);
     }
 
     setBookingToast(`Réservation ajoutée ! Retrouvez "${newBooking.itemName}" dans votre suivi.`);
@@ -625,7 +620,7 @@ export default function App() {
               </button>
               {isCatalogLoading && vehicles.length === 0 ? <CatalogLoadingState label="des voitures" /> :
                 catalogError && vehicles.length === 0 ? <DataErrorState message={catalogError} onRetry={() => void loadCatalog()} /> :
-                  <CarRentalView vehicles={vehicles} onAddBooking={handleAddBooking} session={session} />}
+                  <CarRentalView vehicles={vehicles} onAddBooking={handleAddBooking} onRequireLogin={() => setIsLoginOpen(true)} session={session} />}
             </motion.div>
           )}
 
@@ -645,7 +640,7 @@ export default function App() {
               </button>
               {isCatalogLoading && chauffeurs.length === 0 ? <CatalogLoadingState label="des chauffeurs" /> :
                 catalogError && chauffeurs.length === 0 ? <DataErrorState message={catalogError} onRetry={() => void loadCatalog()} /> :
-                  <ChauffeurView chauffeurs={chauffeurs} onAddBooking={handleAddBooking} session={session} />}
+                  <ChauffeurView chauffeurs={chauffeurs} onAddBooking={handleAddBooking} onRequireLogin={() => setIsLoginOpen(true)} session={session} />}
             </motion.div>
           )}
 
@@ -668,6 +663,7 @@ export default function App() {
                   <SecondaryServicesView
                     providers={providers}
                     onAddBooking={handleAddBooking}
+                    onRequireLogin={() => setIsLoginOpen(true)}
                     session={session}
                   />}
             </motion.div>
