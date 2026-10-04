@@ -750,6 +750,8 @@ export function CarRentalView({
                 </div>
               </div>
 
+              {v.location && <p className="mt-3 flex items-center gap-1 text-xs font-semibold text-slate-500"><MapPin className="h-3.5 w-3.5 shrink-0 text-rose-500" />{v.location}</p>}
+
               {/* Footer pricing */}
               <div className="mt-auto pt-4 flex items-center justify-between">
                 <div>
@@ -846,7 +848,7 @@ export function CarRentalView({
             {filteredVehicleSales.map((sale) => {
               const images = mediaImages(sale.imageUrls, sale.imageUrl);
               return <article key={sale.id} className="group flex h-full w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg">
-                <div className="relative aspect-[16/9] overflow-hidden bg-slate-100">
+                <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
                   <ImageCarousel images={images} alt={`${sale.brand} ${sale.model}`} onOpen={(index) => setLightbox({ images, index, alt: `${sale.brand} ${sale.model}` })} className="h-full w-full" showIndicators={false}>
                     <span className="absolute left-3 top-3 rounded-full bg-amber-500 px-3 py-1 text-[10px] font-extrabold uppercase text-white shadow-sm">◇ À vendre</span>
                     <span className="absolute right-3 top-3 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-extrabold text-white shadow-sm">• {sale.status}</span>

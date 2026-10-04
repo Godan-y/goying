@@ -42,6 +42,8 @@ export interface Vehicle {
   imageUrls?: string[];
   description?: string;
   location?: string;
+  city?: string;
+  commune?: string;
   rating: number;
   reviewsCount: number;
   features: string[];

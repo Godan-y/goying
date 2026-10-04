@@ -212,6 +212,8 @@ Les réservations de voitures sont enregistrées dans la collection Firestore `c
 
 Les catalogues automobiles publics n'affichent que les véhicules disponibles. Les locations dont `isAvailable` vaut `false` ou dont le statut vaut `Réservé`, `Réserve`, `Indisponible`, `Reserved` ou `Booked` sont masquées. Les ventes restent limitées aux documents `vehicleSales` dont `status` vaut exactement `Disponible`.
 
+Pour les voitures à louer, les champs Firestore `city` et `commune` sont lus et affichés sous la forme `Ville, Commune`. Les champs historiques `location`, `localisation` ou `adresse` restent compatibles lorsqu'aucune ville ou commune n'est renseignée.
+
 ## Demandes d'achat de véhicules
 
 Les véhicules à vendre sont lus depuis `vehicleSales`, mais les coordonnées du vendeur ne sont jamais retournées au navigateur. L'acheteur clique sur **Confirmer l'achat**, renseigne son nom et son WhatsApp, puis confirme que Goying peut le contacter.

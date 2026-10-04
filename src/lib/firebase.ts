@@ -136,6 +136,9 @@ export async function getVehicles(): Promise<Vehicle[]> {
     return snapshot.docs.map((snapshotDocument) => {
       const data = record(snapshotDocument.data());
       const imageUrls = Array.isArray(data.imageUrls) ? data.imageUrls.map(String).filter(Boolean) : undefined;
+      const city = typeof data.city === "string" ? data.city : typeof data.ville === "string" ? data.ville : "";
+      const commune = typeof data.commune === "string" ? data.commune : "";
+      const cityAndCommune = [city, commune].filter(Boolean).join(", ");
       const availabilityStatus = String(data.status ?? data.statut ?? data.disponibilite ?? "").trim()
         .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       return {
@@ -152,9 +155,11 @@ export async function getVehicles(): Promise<Vehicle[]> {
         imageUrls,
         description: typeof data.description === "string" ? data.description
           : typeof data.description_vehicule === "string" ? data.description_vehicule : undefined,
-        location: typeof data.location === "string" ? data.location
+        location: cityAndCommune || (typeof data.location === "string" ? data.location
           : typeof data.localisation === "string" ? data.localisation
-            : typeof data.adresse === "string" ? data.adresse : undefined,
+            : typeof data.adresse === "string" ? data.adresse : undefined),
+        city: city || undefined,
+        commune: commune || undefined,
       } as Vehicle;
     });
   } catch (error) {
