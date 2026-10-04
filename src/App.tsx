@@ -32,6 +32,7 @@ import {
 import TermsModal from "./components/TermsModal";
 import SupportChatModal from "./components/SupportChatModal";
 import PropertySubmissionModal from "./components/PropertySubmissionModal";
+import PartnershipModal from "./components/PartnershipModal";
 import GoogleTranslateBootstrap from "./components/GoogleTranslateBootstrap";
 import SplashScreen from "./components/SplashScreen";
 import { CatalogLoadingState, DataErrorState } from "./components/DataLoadingState";
@@ -98,6 +99,7 @@ export default function App() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isPropertySubmissionOpen, setIsPropertySubmissionOpen] = useState(false);
+  const [isPartnershipOpen, setIsPartnershipOpen] = useState(false);
   const [showSubmissionPrompt, setShowSubmissionPrompt] = useState(false);
 
   const loadCatalog = useCallback(async () => {
@@ -715,6 +717,9 @@ export default function App() {
               <button onClick={() => setActiveView("onboarding-pro")} className="hover:text-white transition-colors text-left">
                 Devenir Prestataire
               </button>
+              <button onClick={() => setIsPartnershipOpen(true)} className="hover:text-white transition-colors text-left">
+                Devenir partenaire
+              </button>
               <button onClick={() => setIsTermsOpen(true)} className="hover:text-white transition-colors">
                 Conditions Générales
               </button>
@@ -744,6 +749,7 @@ export default function App() {
         reporterName={session.fullName}
         reporterPhone={session.phone || ""}
       />
+      <PartnershipModal isOpen={isPartnershipOpen} onClose={() => setIsPartnershipOpen(false)} />
       {showSubmissionPrompt && !isPropertySubmissionOpen && (
         <div className="fixed bottom-5 right-5 z-40 max-w-xs rounded-2xl border border-orange-100 bg-white p-4 shadow-xl">
           <button aria-label="Fermer" onClick={() => setShowSubmissionPrompt(false)} className="absolute right-2 top-2 text-slate-400"><X className="h-4 w-4" /></button>

@@ -387,6 +387,17 @@ export async function submitProperty(submission: unknown): Promise<string> {
   return String(payload.id);
 }
 
+export async function submitPartnershipRequest(request: unknown): Promise<string> {
+  const response = await fetch("/api/partnership-requests", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  });
+  const payload = await response.json() as FirestoreRecord;
+  if (!response.ok || !payload.id) throw new Error(String(payload.error || "La proposition de partenariat n'a pas pu être envoyée."));
+  return String(payload.id);
+}
+
 export async function submitBookingReview(bookingId: string, rating: number, comment: string) {
   const { response, payload } = await authenticatedPost("/api/booking-reviews", { bookingId, rating, comment });
   if (!response.ok || typeof payload.rating !== "number" || typeof payload.reviewsCount !== "number") {

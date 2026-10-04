@@ -30,6 +30,10 @@ git push
 
 Tous les numéros saisis dans les formulaires doivent être au format international afin que WhatsApp puisse identifier le pays sans ambiguïté : par exemple `+243 857068014` ou `00243 857068014`. Les numéros locaux seuls, comme `0857068014`, sont refusés lors de l'envoi et les nouvelles réservations sont enregistrées au format `+243857068014`.
 
+## Propositions de partenariat
+
+Le formulaire **Devenir partenaire** enregistre les propositions validées dans la collection privée `partnershipRequests` via `POST /api/partnership-requests`. Chaque proposition contient le nom de l'organisation, son type, la personne de contact, l'email officiel, le téléphone international et le domaine de collaboration. Après l'enregistrement, l'organisation peut poursuivre l'échange via WhatsApp. La route limite les envois abusifs à cinq propositions par adresse IP et par heure.
+
 
 chauffeurs
 

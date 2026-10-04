@@ -12,6 +12,9 @@ const maxPortfolioImageSize = 5 * 1024 * 1024;
 const maxPortfolioImageCount = 6;
 const maxPropertySubmissionImageSize = 5 * 1024 * 1024;
 const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+const partnershipRequestWindowMs = 60 * 60 * 1000;
+const partnershipRequestLimit = 5;
+const partnershipRequestAttempts = new Map<string, number[]>();
 
 const requiredEnvironmentVariables = [
   "AWS_ACCESS_KEY_ID",
@@ -172,6 +175,20 @@ function isPublishedAndAvailable(maison: Record<string, unknown>): boolean {
 const app = express();
 app.use(express.json({ limit: "32kb" }));
 
+function canSubmitPartnershipRequest(request: Request): boolean {
+  const address = request.ip || "unknown";
+  const now = Date.now();
+  const recentAttempts = (partnershipRequestAttempts.get(address) || [])
+    .filter((timestamp) => now - timestamp < partnershipRequestWindowMs);
+  if (recentAttempts.length >= partnershipRequestLimit) {
+    partnershipRequestAttempts.set(address, recentAttempts);
+    return false;
+  }
+  recentAttempts.push(now);
+  partnershipRequestAttempts.set(address, recentAttempts);
+  return true;
+}
+
 app.get("/api/properties", async (_request, response) => {
   try {
     const snapshot = await getFirebaseAdmin().firestore.collection("maisons").get();
@@ -185,13 +202,69 @@ app.get("/api/properties", async (_request, response) => {
   }
 });
 
-app.post("/api/professional-session", authenticateFirebaseUser, async (request: AuthenticatedRequest, response) => {
+app.post("/api/partnership-requests", async (request, response) => {
+  if (!canSubmitPartnershipRequest(request)) {
+    response.status(429).json({ error: "Trop de propositions ont été envoyées. Veuillez réessayer dans une heure." });
+    return;
+  }
+
+  const body = request.body ?? {};
+  const requiredTextFields = ["organizationName", "entityType", "contactName", "officialEmail", "phone", "collaborationArea"];
+  if (!requiredTextFields.every((key) => typeof body[key] === "string" && body[key].trim())) {
+    response.status(400).json({ error: "Veuillez renseigner tous les champs obligatoires du partenariat." });
+    return;
+  }
+
+  const organizationName = body.organizationName.trim();
+  const entityType = body.entityType.trim();
+  const contactName = body.contactName.trim();
+  const officialEmail = body.officialEmail.trim().toLowerCase();
+  const collaborationArea = body.collaborationArea.trim();
+  const phone = body.phone.trim().replace(/[^\d+]/g, "");
+  if (
+    organizationName.length > 160 ||
+    entityType.length > 100 ||
+    contactName.length > 160 ||
+    collaborationArea.length > 160 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(officialEmail) ||
+    !/^\+[1-9]\d{7,14}$/.test(phone)
+  ) {
+    response.status(400).json({ error: "Les informations de contact ou le numéro de téléphone sont invalides." });
+    return;
+  }
+
   try {
     const { firestore } = getFirebaseAdmin();
-    const directAccount = await firestore.collection("professionalAccounts").doc(request.userId).get();
+    const partnershipRequest = await firestore.collection("partnershipRequests").add({
+      organizationName,
+      entityType,
+      contactName,
+      officialEmail,
+      phone,
+      collaborationArea,
+      status: "nouveau",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    response.status(201).json({ id: partnershipRequest.id });
+  } catch (error) {
+    console.error("Partnership request creation failed:", error);
+    response.status(503).json({ error: "La proposition de partenariat est temporairement indisponible. Veuillez réessayer." });
+  }
+});
+
+app.post("/api/professional-session", authenticateFirebaseUser, async (request: AuthenticatedRequest, response) => {
+  const userId = request.userId;
+  if (!userId) {
+    response.status(401).json({ error: "Authentification requise." });
+    return;
+  }
+
+  try {
+    const { firestore } = getFirebaseAdmin();
+    const directAccount = await firestore.collection("professionalAccounts").doc(userId).get();
     const account = directAccount.exists
       ? directAccount
-      : (await firestore.collection("professionalAccounts").where("uid", "==", request.userId).limit(1).get()).docs[0];
+      : (await firestore.collection("professionalAccounts").where("uid", "==", userId).limit(1).get()).docs[0];
     if (!account?.exists) {
       response.status(404).json({ error: "Aucun compte prestataire ne correspond à cette session." });
       return;
@@ -345,7 +418,8 @@ app.post("/api/property-submissions", authenticateFirebaseUser, async (request: 
     const created = await firestore.runTransaction(async (transaction) => {
       const existing = await transaction.get(ref);
       if (existing.exists) {
-        if (existing.data().reporterUid !== request.userId) {
+        const existingSubmission = existing.data();
+        if (existingSubmission?.reporterUid !== request.userId) {
           throw new Error("Cette demande de soumission ne vous appartient pas.");
         }
         return false;
