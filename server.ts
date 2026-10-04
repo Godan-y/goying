@@ -11,6 +11,7 @@ const port = Number(process.env.API_PORT || 3001);
 const maxPortfolioImageSize = 5 * 1024 * 1024;
 const maxPortfolioImageCount = 6;
 const maxPropertySubmissionImageSize = 5 * 1024 * 1024;
+const maxVehicleSubmissionImageCount = 6;
 const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const partnershipRequestWindowMs = 60 * 60 * 1000;
 const partnershipRequestLimit = 5;
@@ -199,6 +200,115 @@ app.get("/api/properties", async (_request, response) => {
   } catch (error) {
     console.error("Public property listing failed:", error);
     response.status(503).json({ error: "Le catalogue immobilier est temporairement indisponible." });
+  }
+});
+
+app.get("/api/vehicle-sales", async (_request, response) => {
+  try {
+    const snapshot = await getFirebaseAdmin().firestore.collection("vehicleSales").get();
+    const vehicleSales = snapshot.docs
+      .filter((document) => document.data().status === "Disponible")
+      .sort((first, second) => {
+        const firstCreatedAt = first.data().createdAt;
+        const secondCreatedAt = second.data().createdAt;
+        const firstMillis = firstCreatedAt && typeof firstCreatedAt.toMillis === "function" ? firstCreatedAt.toMillis() : 0;
+        const secondMillis = secondCreatedAt && typeof secondCreatedAt.toMillis === "function" ? secondCreatedAt.toMillis() : 0;
+        return secondMillis - firstMillis;
+      })
+      .map((document) => {
+        const data = document.data();
+        return {
+          id: document.id,
+          data: {
+            brand: data.brand,
+            model: data.model,
+            year: data.year,
+            vehicleType: data.vehicleType,
+            condition: data.condition,
+            fuel: data.fuel,
+            transmission: data.transmission,
+            mileage: data.mileage,
+            priceUsd: data.priceUsd,
+            priceNegotiable: data.priceNegotiable,
+            city: data.city,
+            commune: data.commune,
+            description: data.description,
+            imageUrl: data.imageUrl,
+            imageUrls: data.imageUrls,
+            status: data.status,
+            createdAt: data.createdAt,
+          },
+        };
+      });
+    response.json({ vehicleSales });
+  } catch (error) {
+    console.error("Public vehicle sales listing failed:", error);
+    response.status(503).json({ error: "Les véhicules à vendre sont temporairement indisponibles." });
+  }
+});
+
+app.post("/api/vehicle-purchase-requests", authenticateFirebaseUser, async (request: AuthenticatedRequest, response) => {
+  const userId = request.userId;
+  const { vehicleId, buyerName, buyerWhatsApp, buyerCommune, consent } = request.body ?? {};
+
+  if (!userId) {
+    response.status(401).json({ error: "Authentification requise." });
+    return;
+  }
+  if (
+    typeof vehicleId !== "string" || !vehicleId.trim() || vehicleId.length > 128 ||
+    typeof buyerName !== "string" || !buyerName.trim() || buyerName.trim().length > 160 ||
+    typeof buyerWhatsApp !== "string" ||
+    (buyerCommune !== undefined && (typeof buyerCommune !== "string" || buyerCommune.trim().length > 160)) ||
+    consent !== true
+  ) {
+    response.status(400).json({ error: "Veuillez renseigner les informations requises et accepter d'être contacté par Goying." });
+    return;
+  }
+
+  const normalizedWhatsApp = buyerWhatsApp.trim().replace(/[^\d+]/g, "");
+  if (!/^\+[1-9]\d{7,14}$/.test(normalizedWhatsApp)) {
+    response.status(400).json({ error: "Le numéro WhatsApp doit inclure un indicatif international valide." });
+    return;
+  }
+
+  try {
+    const { firestore } = getFirebaseAdmin();
+    const vehicle = await firestore.collection("vehicleSales").doc(vehicleId.trim()).get();
+    if (!vehicle.exists || vehicle.data()?.status !== "Disponible") {
+      response.status(404).json({ error: "Ce véhicule n'est plus disponible à la vente." });
+      return;
+    }
+
+    const sale = vehicle.data()!;
+    const imageUrls = Array.isArray(sale.imageUrls) ? sale.imageUrls.filter((image): image is string => typeof image === "string" && image.length > 0) : [];
+    const purchaseRequest = await firestore.collection("vehiclePurchaseRequests").add({
+      vehicleId: vehicle.id,
+      brand: String(sale.brand || ""),
+      model: String(sale.model || ""),
+      year: Number(sale.year) || 0,
+      vehicleType: String(sale.vehicleType || ""),
+      priceUsd: Number(sale.priceUsd) || 0,
+      priceNegotiable: sale.priceNegotiable === true,
+      condition: String(sale.condition || ""),
+      fuel: String(sale.fuel || ""),
+      transmission: String(sale.transmission || ""),
+      mileage: Number(sale.mileage) || 0,
+      city: String(sale.city || ""),
+      commune: String(sale.commune || ""),
+      description: String(sale.description || ""),
+      mainImageUrl: String(sale.imageUrl || imageUrls[0] || ""),
+      buyerName: buyerName.trim(),
+      buyerWhatsApp: normalizedWhatsApp,
+      buyerCommune: typeof buyerCommune === "string" ? buyerCommune.trim() : "",
+      buyerUid: userId,
+      status: "Nouvelle",
+      createdAt: FieldValue.serverTimestamp(),
+    });
+    response.status(201).json({ id: purchaseRequest.id });
+  } catch (error) {
+    console.error("Vehicle purchase request creation failed:", error);
+    response.status(503).json({ error: "La demande d'achat est temporairement indisponible. Veuillez réessayer." });
   }
 });
 
@@ -473,6 +583,97 @@ app.post("/api/property-submission-uploads", authenticateFirebaseUser, async (re
   } catch (error) {
     console.error("Property submission image upload preparation failed:", error);
     response.status(500).json({ error: "Impossible de préparer l'envoi de la photo de référence." });
+  }
+});
+
+app.post("/api/vehicle-submissions", authenticateFirebaseUser, async (request: AuthenticatedRequest, response) => {
+  const body = request.body ?? {};
+  const requiredTextFields = [
+    "ownerName", "ownerPhone", "address", "preferredContact", "brand", "model", "color", "vehicleType",
+    "transmission", "fuel", "condition", "listingIntent", "desiredPrice", "commune", "visitAddress",
+    "availableDays", "availableHours",
+  ];
+  if (!requiredTextFields.every((key) => typeof body[key] === "string" && body[key].trim()) ||
+      !Number.isInteger(Number(body.year)) || Number(body.year) < 1900 || Number(body.year) > new Date().getFullYear() + 1 ||
+      !Number.isInteger(Number(body.seats)) || Number(body.seats) < 1 || Number(body.seats) > 100 ||
+      !Number.isFinite(Number(body.mileage)) || Number(body.mileage) < 0 ||
+      !Number.isFinite(Number(body.desiredPrice)) || Number(body.desiredPrice) < 0 ||
+      body.consent !== true ||
+      !["WhatsApp", "Téléphone", "Email"].includes(body.preferredContact) ||
+      !["Automatique", "Manuelle"].includes(body.transmission) ||
+      !["Essence", "Diesel", "Électrique", "Hybride"].includes(body.fuel) ||
+      !["À vendre", "À louer", "Vente ou location"].includes(body.listingIntent) ||
+      !["Excellent état", "Bon état", "État moyen", "À réparer"].includes(body.condition)) {
+    response.status(400).json({ error: "Veuillez renseigner correctement toutes les informations obligatoires du véhicule." });
+    return;
+  }
+  const ownerPhone = body.ownerPhone.trim().replace(/[^\d+]/g, "");
+  if (!/^\+[1-9]\d{7,14}$/.test(ownerPhone) ||
+      (body.listingIntent !== "À vendre" && !["Par jour", "Par semaine", "Par mois"].includes(body.pricePeriod)) ||
+      (typeof body.submissionRequestId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.submissionRequestId))) {
+    response.status(400).json({ error: "Le numéro, le prix ou la demande de soumission est invalide." });
+    return;
+  }
+  const photoUrls = Array.isArray(body.photoUrls) ? body.photoUrls : [];
+  if (photoUrls.length > maxVehicleSubmissionImageCount || !photoUrls.every((url) => typeof url === "string")) {
+    response.status(400).json({ error: "Vous pouvez joindre au maximum 6 photos valides." });
+    return;
+  }
+  try {
+    const bucket = getEnvironment("AWS_BUCKET_NAME");
+    const region = getEnvironment("AWS_REGION");
+    const prefix = `https://${bucket}.s3.${region}.amazonaws.com/goying/vehicle-submissions/${request.userId}/`;
+    if (!photoUrls.every((url) => url.startsWith(prefix))) {
+      response.status(400).json({ error: "Une ou plusieurs photos ne sont pas valides." });
+      return;
+    }
+    const { firestore } = getFirebaseAdmin();
+    const ref = firestore.collection("vehicleSubmissions").doc(body.submissionRequestId);
+    const submission = await firestore.runTransaction(async (transaction) => {
+      const existing = await transaction.get(ref);
+      if (existing.exists) {
+        if (existing.data()?.ownerUid !== request.userId) throw new Error("Cette demande ne vous appartient pas.");
+        return false;
+      }
+      transaction.create(ref, {
+        ownerUid: request.userId, ownerEmail: request.decodedToken?.email || null,
+        ownerName: body.ownerName.trim(), ownerPhone, address: body.address.trim(), preferredContact: body.preferredContact,
+        brand: body.brand.trim(), model: body.model.trim(), year: Number(body.year), color: body.color.trim(),
+        vehicleType: body.vehicleType.trim(), transmission: body.transmission, fuel: body.fuel, seats: Number(body.seats),
+        mileage: Number(body.mileage), condition: body.condition, listingIntent: body.listingIntent,
+        desiredPrice: Number(body.desiredPrice), pricePeriod: body.listingIntent === "À vendre" ? "Vente" : body.pricePeriod,
+        additionalInformation: typeof body.additionalInformation === "string" ? body.additionalInformation.trim() : "",
+        photoUrls, commune: body.commune.trim(), visitAddress: body.visitAddress.trim(), availableDays: body.availableDays.trim(),
+        availableHours: body.availableHours.trim(), locationComment: typeof body.locationComment === "string" ? body.locationComment.trim() : "",
+        status: "en_attente", createdAt: FieldValue.serverTimestamp(),
+      });
+      return true;
+    });
+    response.status(submission ? 201 : 200).json({ id: ref.id });
+  } catch (error) {
+    console.error("Vehicle submission failed:", error);
+    response.status(500).json({ error: error instanceof Error ? error.message : "La demande n'a pas pu être envoyée." });
+  }
+});
+
+app.post("/api/vehicle-submission-uploads", authenticateFirebaseUser, async (request: AuthenticatedRequest, response) => {
+  const image = request.body?.image;
+  if (!image || typeof image.contentType !== "string" || !allowedImageTypes.has(image.contentType)) {
+    response.status(400).json({ error: "Seules les images JPEG, PNG et WebP sont acceptées." });
+    return;
+  }
+  try {
+    const bucket = getEnvironment("AWS_BUCKET_NAME");
+    const region = getEnvironment("AWS_REGION");
+    const key = `goying/vehicle-submissions/${request.userId}/${crypto.randomUUID()}.${image.contentType.split("/")[1]}`;
+    const upload = await createPresignedPost(getS3Client(), {
+      Bucket: bucket, Key: key, Conditions: [["content-length-range", 1, maxPropertySubmissionImageSize], { "Content-Type": image.contentType }],
+      Fields: { "Content-Type": image.contentType }, Expires: 300,
+    });
+    response.json({ upload: { ...upload, publicUrl: `https://${bucket}.s3.${region}.amazonaws.com/${key}` } });
+  } catch (error) {
+    console.error("Vehicle submission image upload preparation failed:", error);
+    response.status(500).json({ error: "Impossible de préparer l'envoi de la photo du véhicule." });
   }
 });
 

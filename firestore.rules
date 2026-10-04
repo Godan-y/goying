@@ -40,6 +40,11 @@ service cloud.firestore {
       allow create, update, delete: if admin();
     }
 
+    match /vehicleSubmissions/{submissionId} {
+      allow get, list: if admin() || (signedIn() && resource.data.ownerUid == request.auth.uid);
+      allow create, update, delete: if admin();
+    }
+
     // Partnership proposals are validated and created by the server endpoint only.
     // They contain private organisation contact details and are visible to administrators.
     match /partnershipRequests/{requestId} {
@@ -48,6 +53,14 @@ service cloud.firestore {
 
     // Public service catalogues remain readable; only admins change availability/listings.
     match /vehicles/{id} { allow read: if true; allow write: if admin(); }
+    match /vehicleSales/{id} {
+      allow read: if resource.data.status == "Disponible" || admin();
+      allow write: if admin();
+    }
+    match /vehiclePurchaseRequests/{requestId} {
+      allow get: if admin() || (signedIn() && resource.data.buyerUid == request.auth.uid);
+      allow list, create, update, delete: if admin();
+    }
     match /chauffeurs/{id} { allow read: if resource.data.verified == true || admin(); allow write: if admin(); }
     match /providers/{id} {
       allow read: if resource.data.verified == true || admin();

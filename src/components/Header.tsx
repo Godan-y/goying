@@ -30,7 +30,7 @@ export default function Header({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-100 bg-white/95 backdrop-blur-md">
+    <header className="fixed inset-x-0 top-0 z-40 w-full border-b border-slate-100 bg-white/95 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Logo Goying */}
         <div
@@ -128,22 +128,6 @@ export default function Header({
 
         {/* Mobile Navigation Controls */}
         <div className="flex md:hidden items-center space-x-2" id="header-mobile-controls">
-          {/* Always show Bookings Tracker if there are bookings to let mobile users check bookings easily */}
-          {bookings.length > 0 && (
-            <button
-              id="nav-btn-bookings-mobile"
-              onClick={onOpenBookings}
-              className="relative flex items-center justify-center h-9 w-9 rounded-full bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors shrink-0"
-              title="Mes Réservations"
-            >
-              <Clock className="h-4 w-4 text-slate-500" />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-orange-500 text-[9px] font-bold text-white leading-none">
-                {bookings.length}
-              </span>
-            </button>
-          )}
-
-          {/* Hamburger Menu Toggle Button */}
           <button
             id="mobile-menu-toggle"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -152,7 +136,6 @@ export default function Header({
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
-          <LanguageSelector />
         </div>
       </div>
 
@@ -191,6 +174,18 @@ export default function Header({
                 </button>
               )}
 
+              {bookings.length > 0 && (
+                <button
+                  onClick={() => {
+                    onOpenBookings();
+                    setIsMenuOpen(false);
+                  }}
+                  className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-left text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-100"
+                >
+                  <span className="flex items-center gap-2.5"><Clock className="h-4 w-4 text-slate-500" />Mes réservations</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">{bookings.length}</span>
+                </button>
+              )}
 
               {/* Connected User details or Login Button */}
               {session.isLoggedIn ? (
@@ -207,6 +202,19 @@ export default function Header({
                     </div>
                   </div>
                   
+                  {session.role === "prestataire" && (
+                    <button
+                      onClick={() => {
+                        onOpenProfile();
+                        setIsMenuOpen(false);
+                      }}
+                      className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-semibold text-blue-700 hover:bg-blue-50"
+                    >
+                      <User className="h-4 w-4" />
+                      Mon profil prestataire
+                    </button>
+                  )}
+
                   <button
                     onClick={() => {
                       onLogout();
@@ -230,6 +238,10 @@ export default function Header({
                   Se connecter
                 </button>
               )}
+
+              <div className="mt-2 border-t border-slate-100 pt-3">
+                <LanguageSelector />
+              </div>
             </div>
           </motion.div>
         )}

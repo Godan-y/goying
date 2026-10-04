@@ -34,6 +34,12 @@ Tous les numéros saisis dans les formulaires doivent être au format internatio
 
 Le formulaire **Devenir partenaire** enregistre les propositions validées dans la collection privée `partnershipRequests` via `POST /api/partnership-requests`. Chaque proposition contient le nom de l'organisation, son type, la personne de contact, l'email officiel, le téléphone international et le domaine de collaboration. Après l'enregistrement, l'organisation peut poursuivre l'échange via WhatsApp. La route limite les envois abusifs à cinq propositions par adresse IP et par heure.
 
+## Soumissions de véhicules
+
+Le bouton **Soumettre ma voiture** dans Automobile permet à un propriétaire connecté d'enregistrer une demande privée dans `vehicleSubmissions`. Le véhicule n'est jamais publié automatiquement dans `vehicles` : l'équipe Goying contacte le propriétaire, vérifie le véhicule et ses documents, puis prend les photos officielles avant toute publication. Jusqu'à six photos facultatives (JPEG, PNG ou WebP, 5 Mo maximum chacune) peuvent être jointes dans un espace S3 propre au propriétaire.
+
+Les véhicules disponibles à l'achat sont lus directement depuis `vehicleSales`. Seuls les documents ayant `status: "Disponible"` sont visibles publiquement, du plus récent au plus ancien selon `createdAt`.
+
 
 chauffeurs
 
@@ -203,6 +209,14 @@ Le client peut alors laisser une note et un avis.
 ## Réservations automobiles
 
 Les réservations de voitures sont enregistrées dans la collection Firestore `carBookings`. Les réservations de chauffeurs et des services à la personne restent dans `bookings`, tandis que les réservations immobilières restent dans `propertyBookings`.
+
+Les catalogues automobiles publics n'affichent que les véhicules disponibles. Les locations dont `isAvailable` vaut `false` ou dont le statut vaut `Réservé`, `Réserve`, `Indisponible`, `Reserved` ou `Booked` sont masquées. Les ventes restent limitées aux documents `vehicleSales` dont `status` vaut exactement `Disponible`.
+
+## Demandes d'achat de véhicules
+
+Les véhicules à vendre sont lus depuis `vehicleSales`, mais les coordonnées du vendeur ne sont jamais retournées au navigateur. L'acheteur clique sur **Confirmer l'achat**, renseigne son nom et son WhatsApp, puis confirme que Goying peut le contacter.
+
+La demande est créée par l'API Firebase Admin dans `vehiclePurchaseRequests`, avec le statut initial `Nouvelle`, la photo principale et un instantané serveur du véhicule disponible. Aucun paiement ni renseignement bancaire n'est demandé : le paiement s'effectue uniquement sur place, après vérification du véhicule et confirmation de la transaction par l'équipe Goying.
 
 ## Réservations immobilières et administration
 

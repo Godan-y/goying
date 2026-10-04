@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Property, Vehicle, Chauffeur, SecondaryProvider, Booking, UserSession } from "./types";
+import { Property, Vehicle, VehicleSale, Chauffeur, SecondaryProvider, Booking, UserSession } from "./types";
 import Header from "./components/Header";
 import AboutSection from "./components/AboutSection";
 import LoginModal from "./components/LoginModal";
@@ -15,6 +15,7 @@ import {
 import {
   getProperties,
   getVehicles,
+  getVehicleSales,
   getChauffeurs,
   getProviders,
   getBookings,
@@ -32,6 +33,7 @@ import TermsModal from "./components/TermsModal";
 import SupportChatModal from "./components/SupportChatModal";
 import PropertySubmissionModal from "./components/PropertySubmissionModal";
 import PartnershipModal from "./components/PartnershipModal";
+import VehicleSubmissionModal from "./components/VehicleSubmissionModal";
 import GoogleTranslateBootstrap from "./components/GoogleTranslateBootstrap";
 import SplashScreen from "./components/SplashScreen";
 import { CatalogLoadingState, DataErrorState } from "./components/DataLoadingState";
@@ -56,6 +58,7 @@ export default function App() {
   // Application Data States (for dynamic interactive modification)
   const [properties, setProperties] = useState<Property[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [vehicleSales, setVehicleSales] = useState<VehicleSale[]>([]);
   const [chauffeurs, setChauffeurs] = useState<Chauffeur[]>([]);
   const [providers, setProviders] = useState<SecondaryProvider[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -64,6 +67,8 @@ export default function App() {
   const [isBookingsLoading, setIsBookingsLoading] = useState(false);
   const [bookingsError, setBookingsError] = useState<string | null>(null);
   const [isSplashVisible, setIsSplashVisible] = useState(true);
+  const [isVehicleSalesLoading, setIsVehicleSalesLoading] = useState(true);
+  const [vehicleSalesError, setVehicleSalesError] = useState<string | null>(null);
 
   // Navigation State
   const [activeView, setActiveView] = useState<
@@ -103,6 +108,7 @@ export default function App() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isPropertySubmissionOpen, setIsPropertySubmissionOpen] = useState(false);
+  const [isVehicleSubmissionOpen, setIsVehicleSubmissionOpen] = useState(false);
   const [isPartnershipOpen, setIsPartnershipOpen] = useState(false);
   const [showSubmissionPrompt, setShowSubmissionPrompt] = useState(false);
 
@@ -131,6 +137,23 @@ export default function App() {
   useEffect(() => {
     void loadCatalog();
   }, [loadCatalog]);
+
+  const loadVehicleSales = useCallback(async () => {
+    setIsVehicleSalesLoading(true);
+    setVehicleSalesError(null);
+    try {
+      setVehicleSales(await getVehicleSales());
+    } catch (error) {
+      console.error("Error loading vehicle sales:", error);
+      setVehicleSalesError(error instanceof Error ? error.message : "Les véhicules à vendre n'ont pas pu être chargés.");
+    } finally {
+      setIsVehicleSalesLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadVehicleSales();
+  }, [loadVehicleSales]);
 
   const loadBookings = useCallback(async (userId: string) => {
     setIsBookingsLoading(true);
@@ -353,7 +376,7 @@ export default function App() {
       />
 
       {/* Main Content Render */}
-      <main className="flex-grow">
+      <main className="flex-grow pt-16">
         <AnimatePresence mode="wait">
           {activeView === "home" && (
             <motion.div
@@ -620,7 +643,17 @@ export default function App() {
               </button>
               {isCatalogLoading && vehicles.length === 0 ? <CatalogLoadingState label="des voitures" /> :
                 catalogError && vehicles.length === 0 ? <DataErrorState message={catalogError} onRetry={() => void loadCatalog()} /> :
-                  <CarRentalView vehicles={vehicles} onAddBooking={handleAddBooking} onRequireLogin={() => setIsLoginOpen(true)} session={session} />}
+                  <CarRentalView
+                    vehicles={vehicles}
+                    onAddBooking={handleAddBooking}
+                    onRequireLogin={() => setIsLoginOpen(true)}
+                    onOpenVehicleSubmission={() => session.isLoggedIn ? setIsVehicleSubmissionOpen(true) : setIsLoginOpen(true)}
+                    vehicleSales={vehicleSales}
+                    isVehicleSalesLoading={isVehicleSalesLoading}
+                    vehicleSalesError={vehicleSalesError}
+                    onRetryVehicleSales={() => void loadVehicleSales()}
+                    session={session}
+                  />}
             </motion.div>
           )}
 
@@ -746,6 +779,7 @@ export default function App() {
         reporterPhone={session.phone || ""}
       />
       <PartnershipModal isOpen={isPartnershipOpen} onClose={() => setIsPartnershipOpen(false)} />
+      <VehicleSubmissionModal isOpen={isVehicleSubmissionOpen} onClose={() => setIsVehicleSubmissionOpen(false)} session={session} />
       {showSubmissionPrompt && !isPropertySubmissionOpen && (
         <div className="fixed bottom-5 right-5 z-40 max-w-xs rounded-2xl border border-orange-100 bg-white p-4 shadow-xl">
           <button aria-label="Fermer" onClick={() => setShowSubmissionPrompt(false)} className="absolute right-2 top-2 text-slate-400"><X className="h-4 w-4" /></button>

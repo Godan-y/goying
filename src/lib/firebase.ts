@@ -34,6 +34,7 @@ import {
   SecondaryProvider,
   UserSession,
   Vehicle,
+  VehicleSale,
 } from "../types";
 
 const firebaseConfig = {
@@ -135,6 +136,8 @@ export async function getVehicles(): Promise<Vehicle[]> {
     return snapshot.docs.map((snapshotDocument) => {
       const data = record(snapshotDocument.data());
       const imageUrls = Array.isArray(data.imageUrls) ? data.imageUrls.map(String).filter(Boolean) : undefined;
+      const availabilityStatus = String(data.status ?? data.statut ?? data.disponibilite ?? "").trim()
+        .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       return {
         ...data,
         id: snapshotDocument.id,
@@ -142,7 +145,8 @@ export async function getVehicles(): Promise<Vehicle[]> {
         rating: Number(data.rating ?? data.note ?? 0),
         reviewsCount: Number(data.reviewsCount ?? data.avis ?? 0),
         seats: Number(data.seats ?? data.places ?? 0),
-        isAvailable: data.isAvailable !== false && data.disponibilite !== "indisponible",
+        isAvailable: data.isAvailable !== false && data.isAvailable !== "false" &&
+          !["indisponible", "reserve", "reserved", "booked"].includes(availabilityStatus),
         features: Array.isArray(data.features) ? data.features.map(String) : [],
         imageUrl: String(data.imageUrl || data.photo_url || imageUrls?.[0] || ""),
         imageUrls,
@@ -156,6 +160,42 @@ export async function getVehicles(): Promise<Vehicle[]> {
   } catch (error) {
     console.error("Error fetching vehicles from Firestore:", error);
     throw new Error("Le catalogue automobile est momentanément indisponible.");
+  }
+}
+
+export async function getVehicleSales(): Promise<VehicleSale[]> {
+  try {
+    const response = await fetch("/api/vehicle-sales");
+    const payload = await response.json() as { vehicleSales?: Array<{ id: string; data: FirestoreRecord }> };
+    if (!response.ok || !payload.vehicleSales) throw new Error("Catalogue indisponible");
+    const sales = payload.vehicleSales.map(({ id, data }) => {
+      const imageUrls = Array.isArray(data.imageUrls) ? data.imageUrls.map(String).filter(Boolean) : [];
+      const sale: VehicleSale = {
+        id,
+        brand: String(data.brand || ""),
+        model: String(data.model || ""),
+        year: Number(data.year) || 0,
+        vehicleType: String(data.vehicleType || "Véhicule"),
+        condition: String(data.condition || "Non renseigné"),
+        fuel: String(data.fuel || "Non renseigné"),
+        transmission: String(data.transmission || "Non renseignée"),
+        mileage: Number(data.mileage) || 0,
+        priceUsd: Number(data.priceUsd) || 0,
+        priceNegotiable: data.priceNegotiable === true,
+        city: String(data.city || ""),
+        commune: String(data.commune || ""),
+        description: String(data.description || ""),
+        imageUrl: String(data.imageUrl || imageUrls[0] || ""),
+        imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
+        status: "Disponible",
+        createdAt: typeof data.createdAt === "string" ? data.createdAt : undefined,
+      };
+      return sale;
+    });
+    return sales;
+  } catch (error) {
+    console.error("Error fetching vehicle sales from Firestore:", error);
+    throw new Error("Les véhicules à vendre sont momentanément indisponibles.");
   }
 }
 
@@ -387,6 +427,18 @@ export async function submitProperty(submission: unknown): Promise<string> {
   return String(payload.id);
 }
 
+export async function submitVehicle(submission: unknown): Promise<string> {
+  const { response, payload } = await authenticatedPost("/api/vehicle-submissions", submission);
+  if (!response.ok || !payload.id) throw new Error(String(payload.error || "La demande de véhicule n'a pas pu être envoyée."));
+  return String(payload.id);
+}
+
+export async function submitVehiclePurchaseRequest(request: unknown): Promise<string> {
+  const { response, payload } = await authenticatedPost("/api/vehicle-purchase-requests", request);
+  if (!response.ok || !payload.id) throw new Error(String(payload.error || "La demande d'achat n'a pas pu être enregistrée."));
+  return String(payload.id);
+}
+
 export async function submitPartnershipRequest(request: unknown): Promise<string> {
   const response = await fetch("/api/partnership-requests", {
     method: "POST",
@@ -424,6 +476,19 @@ export async function uploadPropertySubmissionImage(image: File): Promise<string
   if (!(await fetch(upload.url, { method: "POST", body: form })).ok) {
     throw new Error("Impossible d'envoyer la photo de référence.");
   }
+  return upload.publicUrl;
+}
+
+export async function uploadVehicleSubmissionImage(image: File): Promise<string> {
+  if (!["image/jpeg", "image/png", "image/webp"].includes(image.type)) throw new Error("Choisissez une image JPEG, PNG ou WebP.");
+  if (image.size === 0 || image.size > 5 * 1024 * 1024) throw new Error("Chaque photo ne doit pas dépasser 5 Mo.");
+  const { response, payload } = await authenticatedPost("/api/vehicle-submission-uploads", { image: { contentType: image.type } });
+  const upload = payload.upload as { url: string; fields: Record<string, string>; publicUrl: string } | undefined;
+  if (!response.ok || !upload) throw new Error(String(payload.error || "Impossible de préparer l'envoi de la photo du véhicule."));
+  const form = new FormData();
+  Object.entries(upload.fields).forEach(([key, value]) => form.append(key, value));
+  form.append("file", image);
+  if (!(await fetch(upload.url, { method: "POST", body: form })).ok) throw new Error("Impossible d'envoyer une photo du véhicule.");
   return upload.publicUrl;
 }
 

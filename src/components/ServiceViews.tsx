@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   Property,
   Vehicle,
+  VehicleSale,
   Chauffeur,
   SecondaryProvider,
   Booking,
@@ -30,11 +31,16 @@ import {
   Sparkles,
   Phone,
   Image as ImageIcon,
-  Scissors
+  Scissors,
+  MessageCircle,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { ImageCarousel } from "./ImageCarousel";
 import { Lightbox } from "./Lightbox";
+import VehiclePurchaseModal from "./VehiclePurchaseModal";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
 
 interface ExpandableDescriptionProps {
@@ -481,10 +487,18 @@ interface CarRentalViewProps {
   vehicles: Vehicle[];
   onAddBooking: (booking: Booking) => Promise<void>;
   onRequireLogin: () => void;
+  onOpenVehicleSubmission: () => void;
+  vehicleSales: VehicleSale[];
+  isVehicleSalesLoading: boolean;
+  vehicleSalesError: string | null;
+  onRetryVehicleSales: () => void;
   session: UserSession;
 }
 
-export function CarRentalView({ vehicles, onAddBooking, onRequireLogin, session }: CarRentalViewProps) {
+export function CarRentalView({
+  vehicles, onAddBooking, onRequireLogin, onOpenVehicleSubmission, vehicleSales,
+  isVehicleSalesLoading, vehicleSalesError, onRetryVehicleSales, session,
+}: CarRentalViewProps) {
   const [filterCat, setFilterCat] = useState<string>("Tous");
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
   const [rentDays, setRentDays] = useState(1);
@@ -495,12 +509,34 @@ export function CarRentalView({ vehicles, onAddBooking, onRequireLogin, session 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rentSuccess, setRentSuccess] = useState(false);
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number; alt: string } | null>(null);
+  const [selectedVehicleSale, setSelectedVehicleSale] = useState<VehicleSale | null>(null);
+  const [purchaseSale, setPurchaseSale] = useState<VehicleSale | null>(null);
+  const [selectedSaleImageIndex, setSelectedSaleImageIndex] = useState(0);
+  const [offerMode, setOfferMode] = useState<"all" | "sale" | "rental">("all");
+  const [saleSearch, setSaleSearch] = useState("");
+  const [saleCategory, setSaleCategory] = useState("Tous");
+  const [saleSort, setSaleSort] = useState<"recent" | "price-asc" | "price-desc">("recent");
 
   const categories = ["Tous", "SUV", "Citadine", "Berline"];
+  const saleCategories = ["Tous", "SUV", "Berline", "Pick-up"];
 
   const filteredVehicles = vehicles.filter((v) => {
-    return filterCat === "Tous" || v.category === filterCat;
+    return v.isAvailable && (filterCat === "Tous" || v.category === filterCat);
   });
+
+  const filteredVehicleSales = vehicleSales
+    .filter((sale) => {
+      const search = saleSearch.trim().toLocaleLowerCase("fr-FR");
+      const matchesSearch = !search || [sale.brand, sale.model, sale.city, sale.commune]
+        .filter(Boolean)
+        .some((value) => value.toLocaleLowerCase("fr-FR").includes(search));
+      return matchesSearch && (saleCategory === "Tous" || sale.vehicleType === saleCategory);
+    })
+    .sort((first, second) => {
+      if (saleSort === "price-asc") return first.priceUsd - second.priceUsd;
+      if (saleSort === "price-desc") return second.priceUsd - first.priceUsd;
+      return 0;
+    });
 
   const openVehicle = (vehicle: Vehicle) => {
     setSelectedVehicle(vehicle);
@@ -508,6 +544,14 @@ export function CarRentalView({ vehicles, onAddBooking, onRequireLogin, session 
     setRentSuccess(false);
     setClientName(session.fullName || "");
     setClientPhone(normalizePhoneInput(session.phone || ""));
+  };
+
+  const openVehiclePurchase = (sale: VehicleSale) => {
+    if (!session.isLoggedIn || !session.uid) {
+      onRequireLogin();
+      return;
+    }
+    setPurchaseSale(sale);
   };
 
   const handleRent = async (e: React.FormEvent) => {
@@ -576,22 +620,62 @@ export function CarRentalView({ vehicles, onAddBooking, onRequireLogin, session 
   };
 
   return (
-    <div className="space-y-6" id="carrental-view-container">
-      {/* Banner */}
-      <div className="rounded-3xl bg-slate-900 px-6 py-8 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
-        <div className="relative z-10 max-w-xl">
-          <span className="inline-block rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300 mb-2">
-            Espace Automobile Goying
+    <div className="flex flex-col gap-6" id="carrental-view-container">
+      <section className="order-1 relative overflow-hidden rounded-3xl bg-slate-900 px-4 py-6 text-white shadow-xl sm:px-8 sm:py-9">
+        <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="relative z-10 max-w-3xl">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-600 bg-slate-800/80 px-3 py-1 text-xs font-semibold text-slate-200">
+            <Car className="h-3.5 w-3.5 text-amber-400" /> Espace Automobile Goying
           </span>
-          <h2 className="font-display text-2xl font-bold sm:text-3xl">
-            Louez en toute sérénité
-          </h2>
-          <p className="mt-1.5 text-xs text-slate-300 sm:text-sm">
-            Bénéficiez de véhicules récents, entièrement révisés, avec assurance tout risque incluse pour vos déplacements.
+          <h2 className="mt-4 font-display text-2xl font-bold tracking-tight sm:text-4xl">Achetez ou louez votre véhicule</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300 sm:text-base">
+            Trouvez la formule idéale selon vos envies : acquisition directe auprès de propriétaires vérifiés avec échange WhatsApp, ou location courte durée clés en main.
           </p>
+          <div className="mt-6 flex flex-wrap gap-2" aria-label="Choisir les offres à afficher">
+            {[
+              { id: "all", label: "Toutes les offres" },
+              { id: "sale", label: "À VENDRE (Achat direct)" },
+              { id: "rental", label: "À LOUER (Location)" },
+            ].map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setOfferMode(option.id as "all" | "sale" | "rental")}
+                aria-pressed={offerMode === option.id}
+                className={`min-w-0 rounded-xl px-3 py-2.5 text-xs font-bold transition-colors sm:px-4 sm:text-sm ${
+                  offerMode === option.id
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "bg-slate-700/80 text-slate-100 hover:bg-slate-700"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
+
+      {offerMode !== "sale" && <>
+      <section className="order-4 flex flex-col gap-4 rounded-3xl border border-emerald-100 bg-emerald-50/70 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h3 className="text-base font-bold text-slate-900">Vous avez une voiture à vendre ou à louer ?</h3>
+          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-600">Soumettez les informations de base. L’équipe Goying vous contactera, se déplacera pour vérifier le véhicule et prendra les photos officielles avant de publier toute annonce.</p>
+        </div>
+        <button type="button" onClick={onOpenVehicleSubmission} className="w-full shrink-0 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-500 sm:w-auto">
+          Soumettre ma voiture
+        </button>
+      </section>
+
+      <section className="order-5 border-t border-slate-200 pt-8" aria-labelledby="vehicle-rentals-title">
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700">Location de véhicules</span>
+            <h3 id="vehicle-rentals-title" className="mt-3 font-display text-2xl font-bold text-slate-900">Voitures à louer</h3>
+            <p className="mt-1 text-sm text-slate-500">Bénéficiez de véhicules récents, entièrement révisés, avec assurance tout risque incluse pour vos déplacements.</p>
+          </div>
+          <span className="self-start rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600 sm:self-auto">{vehicles.length} véhicule{vehicles.length > 1 ? "s" : ""} à louer</span>
+        </div>
 
       {/* Category filters */}
       <div className="flex flex-wrap gap-1.5 border-b border-slate-100 pb-4">
@@ -625,7 +709,8 @@ export function CarRentalView({ vehicles, onAddBooking, onRequireLogin, session 
                 onOpen={(index) => setLightbox({ images: mediaImages(v.imageUrls, v.imageUrl), index, alt: `${v.brand} ${v.model}` })}
                 className="h-full w-full"
               >
-                <span className={`absolute top-3 left-3 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold text-white uppercase shadow-sm ${
+                <span className="absolute top-3 left-3 rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-extrabold uppercase text-white shadow-sm">À louer</span>
+                <span className={`absolute top-3 right-3 rounded-full px-2.5 py-0.5 text-[10px] font-extrabold text-white uppercase shadow-sm ${
                   v.isAvailable ? "bg-emerald-500" : "bg-slate-400"
                 }`}>
                   {v.isAvailable ? "Disponible" : "Réservé"}
@@ -694,6 +779,112 @@ export function CarRentalView({ vehicles, onAddBooking, onRequireLogin, session 
           </p>
         )}
       </div>
+      </section>
+      </>}
+
+      {offerMode !== "rental" && <section className="order-2 border-t border-slate-200 pt-8" aria-labelledby="vehicle-sales-title">
+        <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">Achat de véhicules vérifiés</span>
+            <h3 id="vehicle-sales-title" className="mt-3 font-display text-2xl font-bold text-slate-900 sm:text-3xl">Voitures à vendre</h3>
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-500">Découvrez notre sélection de véhicules disponibles à l'achat direct. Consultez les photos, le kilométrage, l'état général et échangez directement avec le vendeur sur WhatsApp.</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-600">{vehicleSales.length} véhicule{vehicleSales.length > 1 ? "s" : ""} disponible{vehicleSales.length > 1 ? "s" : ""}</span>
+            <button type="button" onClick={onRetryVehicleSales} disabled={isVehicleSalesLoading} className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-50 disabled:opacity-60">Actualiser</button>
+          </div>
+        </div>
+        {isVehicleSalesLoading && vehicleSales.length === 0 ? (
+          <div aria-busy="true" className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 3 }, (_, index) => <div key={index} className="animate-pulse rounded-3xl border border-slate-100 bg-white p-5"><div className="aspect-[4/3] rounded-2xl bg-slate-200" /><div className="mt-4 h-5 w-2/3 rounded bg-slate-200" /><div className="mt-3 h-3 w-full rounded bg-slate-100" /></div>)}
+            <p className="col-span-full text-sm font-semibold text-slate-600">Chargement des véhicules...</p>
+          </div>
+        ) : vehicleSalesError && vehicleSales.length === 0 ? (
+          <div role="alert" className="rounded-3xl border border-red-100 bg-red-50 p-6 text-center">
+            <p className="font-semibold text-slate-900">Impossible de charger les véhicules à vendre</p>
+            <p className="mt-1 text-sm text-slate-600">{vehicleSalesError}</p>
+            <button type="button" onClick={onRetryVehicleSales} className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Réessayer</button>
+          </div>
+        ) : vehicleSales.length === 0 ? (
+          <div className="flex min-h-72 flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white px-5 py-10 text-center shadow-sm">
+            <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }} className="flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-slate-400">
+              <Car className="h-7 w-7" />
+            </motion.div>
+            <h4 className="mt-5 text-lg font-bold text-slate-800">Aucun véhicule à vendre pour le moment.</h4>
+            <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">Aucun résultat ne correspond à vos critères de recherche. Essayez de réinitialiser vos filtres.</p>
+            <button type="button" onClick={() => { setSaleSearch(""); setSaleCategory("Tous"); setSaleSort("recent"); }} className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50">Réinitialiser les filtres</button>
+          </div>
+        ) : (
+          <>
+          <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:flex-row lg:items-center">
+            <label className="flex min-w-0 flex-1 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-slate-500 focus-within:border-slate-400">
+              <Search className="h-4 w-4 shrink-0" />
+              <input value={saleSearch} onChange={(event) => setSaleSearch(event.target.value)} placeholder="Rechercher marque, modèle, ville, commune..." className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400" />
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {saleCategories.map((category) => <button key={category} type="button" onClick={() => setSaleCategory(category)} className={`rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${saleCategory === category ? "bg-amber-500 text-white" : "border border-slate-200 text-slate-600 hover:bg-slate-50"}`}>{category}</button>)}
+            </div>
+            <label className="flex items-center gap-2 text-xs font-medium text-slate-500">
+              Trier :
+              <select value={saleSort} onChange={(event) => setSaleSort(event.target.value as "recent" | "price-asc" | "price-desc")} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-slate-700 outline-none">
+                <option value="recent">Plus récentes</option>
+                <option value="price-asc">Prix croissant</option>
+                <option value="price-desc">Prix décroissant</option>
+              </select>
+            </label>
+          </div>
+          {filteredVehicleSales.length === 0 ? (
+            <div className="flex min-h-72 flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white px-5 py-10 text-center shadow-sm">
+              <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }} className="flex h-16 w-16 items-center justify-center rounded-3xl bg-slate-100 text-slate-400">
+                <Car className="h-7 w-7" />
+              </motion.div>
+              <h4 className="mt-5 text-lg font-bold text-slate-800">Aucun véhicule à vendre pour le moment.</h4>
+              <p className="mt-2 max-w-md text-sm leading-relaxed text-slate-500">Aucun résultat ne correspond à vos critères de recherche. Essayez de réinitialiser vos filtres.</p>
+              <button type="button" onClick={() => { setSaleSearch(""); setSaleCategory("Tous"); setSaleSort("recent"); }} className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-semibold text-slate-600 shadow-sm transition-colors hover:bg-slate-50">Réinitialiser les filtres</button>
+            </div>
+          ) : <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredVehicleSales.map((sale) => {
+              const images = mediaImages(sale.imageUrls, sale.imageUrl);
+              return <article key={sale.id} className="group flex h-full w-full max-w-sm flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-amber-300 hover:shadow-lg">
+                <div className="relative aspect-[16/9] overflow-hidden bg-slate-100">
+                  <ImageCarousel images={images} alt={`${sale.brand} ${sale.model}`} onOpen={(index) => setLightbox({ images, index, alt: `${sale.brand} ${sale.model}` })} className="h-full w-full" showIndicators={false}>
+                    <span className="absolute left-3 top-3 rounded-full bg-amber-500 px-3 py-1 text-[10px] font-extrabold uppercase text-white shadow-sm">◇ À vendre</span>
+                    <span className="absolute right-3 top-3 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-extrabold text-white shadow-sm">• {sale.status}</span>
+                    <span className="absolute bottom-3 left-3 rounded-full bg-slate-900/75 px-2.5 py-1 text-[10px] font-bold text-white">{`1 / ${images.length} photo${images.length > 1 ? "s" : ""}`}</span>
+                    <span className="absolute bottom-3 right-3 max-w-[60%] truncate rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-700 shadow-sm">◉ {sale.condition}</span>
+                  </ImageCarousel>
+                </div>
+                <div className="flex flex-grow flex-col p-5">
+                  <h4 className="truncate text-lg font-bold text-slate-900 transition-colors group-hover:text-amber-600">{sale.brand} {sale.model}</h4>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">{sale.year} <span className="px-1 text-slate-300">•</span> {sale.vehicleType}</p>
+                  <div className="mt-4 grid grid-cols-3 gap-2 border-y border-slate-100 py-3 text-[11px] font-medium text-slate-500">
+                    <span className="flex min-w-0 items-center gap-1 truncate"><Gauge className="h-3.5 w-3.5 shrink-0 text-slate-400" />{sale.mileage.toLocaleString("fr-FR")} km</span>
+                    <span className="flex min-w-0 items-center gap-1 truncate"><Fuel className="h-3.5 w-3.5 shrink-0 text-slate-400" />{sale.fuel}</span>
+                    <span className="flex min-w-0 items-center gap-1 truncate"><Sliders className="h-3.5 w-3.5 shrink-0 text-slate-400" />{sale.transmission}</span>
+                  </div>
+                  <p className="mt-3 flex items-center gap-1 truncate text-xs font-semibold text-slate-500"><MapPin className="h-3.5 w-3.5 shrink-0 text-rose-500" />{[sale.city, sale.commune].filter(Boolean).join(", ") || "Localisation à confirmer"}</p>
+                  <div className="mt-auto flex items-end justify-between gap-3 pt-4">
+                    <div>
+                      <p className="text-2xl font-extrabold text-slate-900">{sale.priceUsd.toLocaleString("en-US")} $</p>
+                      {sale.priceNegotiable ? <span className="mt-1 inline-flex rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-extrabold uppercase text-emerald-700">Prix négociable</span> : <span className="mt-1 inline-flex text-[10px] font-semibold text-slate-400">Prix fixe</span>}
+                    </div>
+                    <button type="button" onClick={() => openVehiclePurchase(sale)} className="shrink-0 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-500">Acheter</button>
+                  </div>
+                </div>
+              </article>;
+            })}
+          </div>}
+          </>
+        )}
+      </section>}
+
+      {offerMode === "all" && (
+        <div className="order-3 flex items-center gap-4 py-2" aria-label="Séparation entre les offres de vente et de location">
+          <div className="h-px flex-1 bg-slate-200" />
+          <span className="bg-white px-3 text-xs font-bold uppercase tracking-wide text-slate-400">Ou préférez la location</span>
+          <div className="h-px flex-1 bg-slate-200" />
+        </div>
+      )}
 
       {/* Vehicle details & renting modal */}
       <AnimatePresence>
@@ -847,7 +1038,7 @@ export function CarRentalView({ vehicles, onAddBooking, onRequireLogin, session 
                       disabled={isSubmitting}
                       className="w-full rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md shadow-emerald-100 hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
                     >
-                      {isSubmitting ? "Enregistrement…" : "Payer & Valider"}
+                      {isSubmitting ? "Enregistrement…" : "Valider la réservation"}
                     </button>
                   </div>
                 </form>
@@ -856,9 +1047,67 @@ export function CarRentalView({ vehicles, onAddBooking, onRequireLogin, session 
           </div>
         )}
       </AnimatePresence>
+      <AnimatePresence>
+        {selectedVehicleSale && (
+          <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-2 sm:items-center sm:p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSelectedVehicleSale(null)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" />
+            <motion.section initial={{ scale: 0.95, opacity: 0, y: 15 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0, y: 15 }} className="relative z-10 my-0 max-h-[calc(100dvh-1rem)] w-full max-w-2xl overflow-x-hidden overflow-y-auto rounded-2xl bg-white p-3 shadow-2xl sm:my-auto sm:rounded-3xl sm:p-7" role="dialog" aria-modal="true" aria-labelledby="vehicle-sale-title">
+              {(() => {
+                const images = mediaImages(selectedVehicleSale.imageUrls, selectedVehicleSale.imageUrl);
+                const currentImage = images[selectedSaleImageIndex] || images[0];
+                const selectImage = (index: number) => setSelectedSaleImageIndex((index + images.length) % images.length);
+                return <>
+                  <button type="button" aria-label="Fermer" onClick={() => setSelectedVehicleSale(null)} className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 sm:right-5 sm:top-5"><X className="h-5 w-5" /></button>
+                  <div className="relative overflow-hidden rounded-2xl bg-slate-100">
+                    <button type="button" onClick={() => setLightbox({ images, index: selectedSaleImageIndex, alt: `${selectedVehicleSale.brand} ${selectedVehicleSale.model}` })} className="block w-full cursor-zoom-in">
+                      <img src={currentImage} alt={`${selectedVehicleSale.brand} ${selectedVehicleSale.model}`} referrerPolicy="no-referrer" className="aspect-[16/9] w-full object-cover" />
+                    </button>
+                    <span className="absolute left-3 top-3 rounded-full bg-amber-500 px-3 py-1 text-[10px] font-extrabold uppercase text-white shadow-sm">◇ À vendre</span>
+                    <span className="absolute right-14 top-3 rounded-full bg-emerald-500 px-3 py-1 text-[10px] font-extrabold text-white shadow-sm">• {selectedVehicleSale.status}</span>
+                    {images.length > 1 && <>
+                      <button type="button" aria-label="Photo précédente" onClick={() => selectImage(selectedSaleImageIndex - 1)} className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-slate-900/65 text-white hover:bg-slate-900"><ChevronLeft className="h-5 w-5" /></button>
+                      <button type="button" aria-label="Photo suivante" onClick={() => selectImage(selectedSaleImageIndex + 1)} className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-slate-900/65 text-white hover:bg-slate-900"><ChevronRight className="h-5 w-5" /></button>
+                    </>}
+                    <span className="absolute bottom-3 left-3 rounded-full bg-slate-900/80 px-3 py-1 text-[10px] font-bold text-white">Photo {selectedSaleImageIndex + 1} sur {images.length}</span>
+                    <button type="button" onClick={() => setLightbox({ images, index: selectedSaleImageIndex, alt: `${selectedVehicleSale.brand} ${selectedVehicleSale.model}` })} className="absolute bottom-3 right-3 rounded-full bg-white px-3 py-1 text-[10px] font-bold text-slate-700 shadow-sm">↗ Plein écran &amp; Zoom</button>
+                  </div>
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {images.map((image, index) => <button key={image} type="button" onClick={() => setSelectedSaleImageIndex(index)} className={`h-14 w-20 shrink-0 overflow-hidden rounded-xl border-2 ${selectedSaleImageIndex === index ? "border-amber-500" : "border-transparent"}`}><img src={image} alt={`Miniature ${index + 1}`} referrerPolicy="no-referrer" className="h-full w-full object-cover" /></button>)}
+                  </div>
+                  <div className="mt-5 flex flex-col gap-3 border-b border-slate-100 pb-5 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <h3 id="vehicle-sale-title" className="break-words font-display text-xl font-bold text-slate-900 sm:text-2xl">{selectedVehicleSale.brand} {selectedVehicleSale.model}</h3>
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs font-semibold text-slate-600"><span>▣ Année {selectedVehicleSale.year}</span><span className="text-slate-300">•</span><span className="rounded-md bg-slate-100 px-2 py-1">{selectedVehicleSale.vehicleType}</span><span className="text-slate-300">•</span><span className="max-w-full break-words rounded-md bg-amber-50 px-2 py-1 text-amber-700">◇ {selectedVehicleSale.condition}</span></div>
+                    </div>
+                    <div className="shrink-0 sm:text-right">
+                      <p className="font-display text-2xl font-extrabold text-slate-900 sm:text-3xl">{selectedVehicleSale.priceUsd.toLocaleString("en-US")} $</p>
+                      {selectedVehicleSale.priceNegotiable && <span className="mt-1 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">✓ Prix négociable</span>}
+                    </div>
+                  </div>
+                  <h4 className="mt-5 text-xs font-bold uppercase tracking-wider text-slate-400">Caractéristiques techniques</h4>
+                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4"><Detail label="Kilométrage" value={`${selectedVehicleSale.mileage.toLocaleString("fr-FR")} km`} /><Detail label="Carburant" value={selectedVehicleSale.fuel} /><Detail label="Transmission" value={selectedVehicleSale.transmission} /><Detail label="Localisation" value={[selectedVehicleSale.city, selectedVehicleSale.commune].filter(Boolean).join(", ") || "À confirmer"} /></div>
+                  {selectedVehicleSale.description && <><h4 className="mt-6 border-t border-slate-100 pt-5 text-xs font-bold uppercase tracking-wider text-slate-400">Description du véhicule</h4><p className="mt-3 break-words rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">{selectedVehicleSale.description}</p></>}
+                  <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-center gap-2 text-xs text-slate-500"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"><MessageCircle className="h-4 w-4" /></span><span className="min-w-0"><strong className="block text-slate-700">Paiement sur place</strong>Aucun paiement en ligne n'est demandé.</span></div>
+                    <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row">
+                    <button type="button" onClick={() => setSelectedVehicleSale(null)} className="w-full rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold text-slate-600 hover:bg-slate-50 sm:w-auto">Fermer</button>
+                    <button type="button" onClick={() => { setSelectedVehicleSale(null); openVehiclePurchase(selectedVehicleSale); }} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-emerald-500 sm:w-auto">Confirmer l'achat</button>
+                    </div>
+                  </div>
+                </>;
+              })()}
+            </motion.section>
+          </div>
+        )}
+      </AnimatePresence>
+      <VehiclePurchaseModal sale={purchaseSale} session={session} onClose={() => setPurchaseSale(null)} onRequireLogin={onRequireLogin} />
       <Lightbox images={lightbox?.images || []} initialIndex={lightbox?.index} alt={lightbox?.alt} isOpen={Boolean(lightbox)} onClose={() => setLightbox(null)} />
     </div>
   );
+}
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return <div className="min-w-0 rounded-xl bg-slate-50 p-2.5"><p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p><p className="mt-0.5 break-words font-semibold text-slate-700">{value}</p></div>;
 }
 
 /* ========================================== */

@@ -48,6 +48,27 @@ export interface Vehicle {
   isAvailable: boolean;
 }
 
+export interface VehicleSale {
+  id: string;
+  brand: string;
+  model: string;
+  year: number;
+  vehicleType: string;
+  condition: string;
+  fuel: string;
+  transmission: string;
+  mileage: number;
+  priceUsd: number;
+  priceNegotiable: boolean;
+  city: string;
+  commune: string;
+  description: string;
+  imageUrl: string;
+  imageUrls?: string[];
+  status: "Disponible";
+  createdAt?: string;
+}
+
 export interface Chauffeur {
   id: string;
   name: string;
