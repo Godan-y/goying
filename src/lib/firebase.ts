@@ -582,14 +582,14 @@ export async function getProviderBookings(providerId: string): Promise<Booking[]
     headers: { Authorization: ["Bear", "er "].join("") + token },
   });
   const payload = await response.json() as FirestoreRecord;
-  if (!response.ok || !Array.isArray(payload.missions)) throw new Error(String(payload.error || "Vos missions n'ont pas pu être chargées."));
+  if (!response.ok || !Array.isArray(payload.missions)) throw new Error(String(payload.error || payload.detail || "Vos missions n'ont pas pu être chargées."));
   return payload.missions as Booking[];
 }
 
 export async function requestProviderCompletion(bookingId: string, providerId: string) {
   if (!providerId) throw new Error("Prestataire introuvable.");
   const { response, payload } = await authenticatedPost(`/api/provider-missions/${encodeURIComponent(bookingId)}/complete`, {});
-  if (!response.ok) throw new Error(String(payload.error || "La fin de prestation n'a pas pu être signalée."));
+  if (!response.ok) throw new Error(String(payload.error || payload.detail || "La fin de prestation n'a pas pu être signalée."));
 }
 
 async function uploadProfessionalImages(images: File[], uploadType: "portfolio" | "avatar"): Promise<string[]> {
@@ -649,7 +649,7 @@ export async function updateProviderAvailability(session: UserSession, providerA
   }
   const { response, payload } = await authenticatedPost("/api/provider-availability", { providerAvailability });
   if (!response.ok || payload.providerAvailability !== providerAvailability) {
-    throw new Error(String(payload.error || "Votre disponibilité n'a pas pu être mise à jour."));
+    throw new Error(String(payload.error || payload.detail || "Votre disponibilité n'a pas pu être mise à jour."));
   }
 }
 
