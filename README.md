@@ -189,16 +189,16 @@ Ajoutez l'URL de production à `AllowedOrigins` lors du déploiement. Les objets
 
 ## Déploiement de `goyingservices.com`
 
-Le client React est servi sur `https://goyingservices.com` et l'API Node sécurisée est déployée séparément sur Render, sous `https://api.goyingservices.com`.
+Le client React est servi sur `https://goyingservices.com` et l'API Node sécurisée est déployée séparément sur Render, sous `https://backend-goying.onrender.com`.
 
 1. Dans Render, créez un **Blueprint** depuis ce dépôt : Render détecte [`render.yaml`](./render.yaml) et crée le service `goying-api`.
 2. Renseignez dans Render les valeurs secrètes demandées par le Blueprint : `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_BUCKET_NAME`, `AWS_REGION`, `FIREBASE_API_KEY` et `FIREBASE_SERVICE_ACCOUNT_JSON`. Ne les ajoutez jamais au dépôt.
-3. Ajoutez `api.goyingservices.com` comme domaine personnalisé du service Render. Dans le gestionnaire DNS, créez le CNAME fourni par Render pour `api`.
-4. Générez le client de production avec `VITE_API_BASE_URL=https://api.goyingservices.com npm.cmd run build`, puis publiez le contenu de `dist/` dans le répertoire web de `goyingservices.com` sur l'hébergement LiteSpeed.
+3. L'API Render est accessible à `https://backend-goying.onrender.com`. Si vous ajoutez plus tard `api.goyingservices.com` comme domaine personnalisé, mettez à jour `VITE_API_BASE_URL` avant de reconstruire le client.
+4. Générez le client de production avec `VITE_API_BASE_URL=https://backend-goying.onrender.com npm.cmd run build`, puis publiez le contenu de `dist/` dans le répertoire web de `goyingservices.com` sur l'hébergement LiteSpeed.
 5. Dans Firebase Console > Authentication > Settings > Authorized domains, ajoutez `goyingservices.com` et `www.goyingservices.com`.
 6. Appliquez la configuration CORS S3 ci-dessus, avec les deux domaines HTTPS de production.
 
-L'API ne répond qu'aux origines indiquées dans `ALLOWED_ORIGINS`; cette variable Render contient déjà les deux domaines publics. Vérifiez le déploiement avec `https://api.goyingservices.com/health`, qui doit répondre `{ "status": "ok" }`.
+L'API ne répond qu'aux origines indiquées dans `ALLOWED_ORIGINS`; cette variable Render contient déjà les deux domaines publics. Vérifiez le déploiement avec `https://backend-goying.onrender.com/health`, qui doit répondre `{ "status": "ok" }`.
 
 ## Avis clients
 

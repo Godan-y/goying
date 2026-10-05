@@ -63,7 +63,7 @@ const professionalAccountsCollection = "professionalAccounts";
 type FirestoreRecord = Record<string, unknown>;
 type ProviderListing = Chauffeur | SecondaryProvider;
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? "" : "https://api.goyingservices.com")).replace(/\/+$/, "");
+  (import.meta.env.DEV ? "" : "https://backend-goying.onrender.com")).replace(/\/+$/, "");
 
 function apiUrl(path: string) {
   return `${apiBaseUrl}${path}`;
