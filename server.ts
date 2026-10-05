@@ -7,7 +7,7 @@ import { cert, getApps, initializeApp } from "firebase-admin/app";
 import { DecodedIdToken, getAuth as getAdminAuth } from "firebase-admin/auth";
 import { FieldValue, getFirestore as getAdminFirestore } from "firebase-admin/firestore";
 
-const port = Number(process.env.API_PORT || 3001);
+const port = Number(process.env.PORT || process.env.API_PORT || 3001);
 const maxPortfolioImageSize = 5 * 1024 * 1024;
 const maxPortfolioImageCount = 6;
 const maxPropertySubmissionImageSize = 5 * 1024 * 1024;
@@ -16,6 +16,17 @@ const allowedImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 const partnershipRequestWindowMs = 60 * 60 * 1000;
 const partnershipRequestLimit = 5;
 const partnershipRequestAttempts = new Map<string, number[]>();
+const developmentOrigins = ["http://localhost:3000", "http://localhost:8000"];
+const allowedOrigins = new Set(
+  (process.env.ALLOWED_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+
+if (process.env.NODE_ENV !== "production") {
+  developmentOrigins.forEach((origin) => allowedOrigins.add(origin));
+}
 
 const requiredEnvironmentVariables = [
   "AWS_ACCESS_KEY_ID",
@@ -174,6 +185,24 @@ function isPublishedAndAvailable(maison: Record<string, unknown>): boolean {
 }
 
 const app = express();
+app.use((request, response, next) => {
+  const origin = request.header("Origin");
+  if (origin && !allowedOrigins.has(origin)) {
+    response.status(403).json({ error: "Cette origine n'est pas autorisée à accéder à l'API." });
+    return;
+  }
+  if (origin) {
+    response.setHeader("Access-Control-Allow-Origin", origin);
+    response.setHeader("Vary", "Origin");
+    response.setHeader("Access-Control-Allow-Headers", "Authorization, Content-Type");
+    response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  }
+  if (request.method === "OPTIONS") {
+    response.sendStatus(204);
+    return;
+  }
+  next();
+});
 app.use(express.json({ limit: "32kb" }));
 
 function canSubmitPartnershipRequest(request: Request): boolean {
@@ -201,6 +230,10 @@ app.get("/api/properties", async (_request, response) => {
     console.error("Public property listing failed:", error);
     response.status(503).json({ error: "Le catalogue immobilier est temporairement indisponible." });
   }
+});
+
+app.get("/health", (_request, response) => {
+  response.json({ status: "ok" });
 });
 
 app.get("/api/vehicle-sales", async (_request, response) => {

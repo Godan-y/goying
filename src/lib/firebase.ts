@@ -62,6 +62,12 @@ const professionalAccountsCollection = "professionalAccounts";
 
 type FirestoreRecord = Record<string, unknown>;
 type ProviderListing = Chauffeur | SecondaryProvider;
+const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? "" : "https://api.goyingservices.com")).replace(/\/+$/, "");
+
+function apiUrl(path: string) {
+  return `${apiBaseUrl}${path}`;
+}
 
 function record(value: unknown): FirestoreRecord {
   return value as FirestoreRecord;
@@ -73,7 +79,7 @@ export async function logoutCurrentUser() {
 
 export async function getProperties(): Promise<Property[]> {
   try {
-    const response = await fetch("/api/properties");
+    const response = await fetch(apiUrl("/api/properties"));
     const payload = await response.json() as { properties?: Array<{ id: string; data: FirestoreRecord }> };
     if (!response.ok || !payload.properties) throw new Error("Catalogue indisponible");
 
@@ -170,7 +176,7 @@ export async function getVehicles(): Promise<Vehicle[]> {
 
 export async function getVehicleSales(): Promise<VehicleSale[]> {
   try {
-    const response = await fetch("/api/vehicle-sales");
+    const response = await fetch(apiUrl("/api/vehicle-sales"));
     const payload = await response.json() as { vehicleSales?: Array<{ id: string; data: FirestoreRecord }> };
     if (!response.ok || !payload.vehicleSales) throw new Error("Catalogue indisponible");
     const sales = payload.vehicleSales.map(({ id, data }) => {
@@ -259,7 +265,7 @@ export async function getChauffeurs(): Promise<Chauffeur[]> {
 
 export async function getProviders(): Promise<SecondaryProvider[]> {
   try {
-    const response = await fetch("/api/providers");
+    const response = await fetch(apiUrl("/api/providers"));
     const payload = await response.json() as { providers?: FirestoreRecord[]; error?: string };
     if (!response.ok || !payload.providers) {
       throw new Error(payload.error || "Le catalogue des prestataires est momentanément indisponible.");
@@ -399,7 +405,7 @@ async function authenticatedPost(path: string, body: unknown) {
   const user = auth.currentUser;
   if (!user) throw new Error("Authentification requise.");
   const token = await user.getIdToken();
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     method: "POST",
     headers: { Authorization: ["Bear", "er "].join("") + token, "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -448,7 +454,7 @@ export async function submitVehiclePurchaseRequest(request: unknown): Promise<st
 }
 
 export async function submitPartnershipRequest(request: unknown): Promise<string> {
-  const response = await fetch("/api/partnership-requests", {
+  const response = await fetch(apiUrl("/api/partnership-requests"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
@@ -531,7 +537,7 @@ export async function getProviderBookings(providerId: string): Promise<Booking[]
   const user = auth.currentUser;
   if (!user) throw new Error("Authentification requise.");
   const token = await user.getIdToken();
-  const response = await fetch("/api/provider-missions", {
+  const response = await fetch(apiUrl("/api/provider-missions"), {
     headers: { Authorization: ["Bear", "er "].join("") + token },
   });
   const payload = await response.json() as FirestoreRecord;
