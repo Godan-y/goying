@@ -80,11 +80,20 @@ export async function logoutCurrentUser() {
 export async function getProperties(): Promise<Property[]> {
   try {
     const response = await fetch(apiUrl("/api/properties"));
-    const payload = await response.json() as { properties?: Array<{ id: string; data: FirestoreRecord }> };
-    if (!response.ok || !payload.properties) throw new Error("Catalogue indisponible");
+    let propertyEntries: Array<{ id: string; data: FirestoreRecord }>;
+    if (response.status === 404) {
+      const pythonResponse = await fetch(apiUrl("/api/maisons"));
+      const pythonPayload = await pythonResponse.json() as FirestoreRecord[];
+      if (!pythonResponse.ok || !Array.isArray(pythonPayload)) throw new Error("Catalogue indisponible");
+      propertyEntries = pythonPayload.map((data) => ({ id: String(data.id), data }));
+    } else {
+      const payload = await response.json() as { properties?: Array<{ id: string; data: FirestoreRecord }> };
+      if (!response.ok || !payload.properties) throw new Error("Catalogue indisponible");
+      propertyEntries = payload.properties;
+    }
 
     const properties: Property[] = [];
-    payload.properties.forEach(({ id, data }) => {
+    propertyEntries.forEach(({ id, data }) => {
       const approved = data.approuvee === true || data.approuvee === "true" || data.approuvee === 1 ||
         data.statut === "approuvee" || data.statut === "approuve";
       if (!approved) return;
@@ -129,6 +138,44 @@ export async function getProperties(): Promise<Property[]> {
   }
 }
 
+function toVehicle(data: FirestoreRecord, id: string): Vehicle {
+  const imageUrls = Array.isArray(data.imageUrls) ? data.imageUrls.map(String).filter(Boolean) : undefined;
+  const city = typeof data.city === "string" ? data.city : typeof data.ville === "string" ? data.ville : "";
+  const commune = typeof data.commune === "string" ? data.commune : "";
+  const cityAndCommune = [city, commune].filter(Boolean).join(", ");
+  const availabilityStatus = String(data.status ?? data.statut ?? data.disponibilite ?? "").trim()
+    .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return {
+    ...data,
+    id,
+    pricePerDay: Number(data.pricePerDay ?? data.prixParJour ?? 0),
+    rating: Number(data.rating ?? data.note ?? 0),
+    reviewsCount: Number(data.reviewsCount ?? data.avis ?? 0),
+    seats: Number(data.seats ?? data.places ?? 0),
+    isAvailable: data.isAvailable !== false && data.isAvailable !== "false" &&
+      !["indisponible", "reserve", "reserved", "booked"].includes(availabilityStatus),
+    features: Array.isArray(data.features) ? data.features.map(String) : [],
+    imageUrl: String(data.imageUrl || data.photo_url || imageUrls?.[0] || ""),
+    imageUrls,
+    description: typeof data.description === "string" ? data.description
+      : typeof data.description_vehicule === "string" ? data.description_vehicule : undefined,
+    location: cityAndCommune || (typeof data.location === "string" ? data.location
+      : typeof data.localisation === "string" ? data.localisation
+        : typeof data.adresse === "string" ? data.adresse : undefined),
+    city: city || undefined,
+    commune: commune || undefined,
+  } as Vehicle;
+}
+
+async function getPublicVehiclesFromApi(): Promise<Vehicle[]> {
+  const response = await fetch(apiUrl("/api/public/voitures"));
+  const payload = await response.json() as { vehicles?: FirestoreRecord[]; detail?: string };
+  if (!response.ok || !payload.vehicles) {
+    throw new Error(payload.detail || "Le catalogue automobile est momentanément indisponible.");
+  }
+  return payload.vehicles.map((vehicle) => toVehicle(vehicle, String(vehicle.id)));
+}
+
 export async function getVehicles(): Promise<Vehicle[]> {
   try {
     const vehicleRef = collection(db, vehiclesCollection);
@@ -139,47 +186,28 @@ export async function getVehicles(): Promise<Vehicle[]> {
       await batch.commit();
       return initialVehicles;
     }
-    return snapshot.docs.map((snapshotDocument) => {
-      const data = record(snapshotDocument.data());
-      const imageUrls = Array.isArray(data.imageUrls) ? data.imageUrls.map(String).filter(Boolean) : undefined;
-      const city = typeof data.city === "string" ? data.city : typeof data.ville === "string" ? data.ville : "";
-      const commune = typeof data.commune === "string" ? data.commune : "";
-      const cityAndCommune = [city, commune].filter(Boolean).join(", ");
-      const availabilityStatus = String(data.status ?? data.statut ?? data.disponibilite ?? "").trim()
-        .toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      return {
-        ...data,
-        id: snapshotDocument.id,
-        pricePerDay: Number(data.pricePerDay ?? data.prixParJour ?? 0),
-        rating: Number(data.rating ?? data.note ?? 0),
-        reviewsCount: Number(data.reviewsCount ?? data.avis ?? 0),
-        seats: Number(data.seats ?? data.places ?? 0),
-        isAvailable: data.isAvailable !== false && data.isAvailable !== "false" &&
-          !["indisponible", "reserve", "reserved", "booked"].includes(availabilityStatus),
-        features: Array.isArray(data.features) ? data.features.map(String) : [],
-        imageUrl: String(data.imageUrl || data.photo_url || imageUrls?.[0] || ""),
-        imageUrls,
-        description: typeof data.description === "string" ? data.description
-          : typeof data.description_vehicule === "string" ? data.description_vehicule : undefined,
-        location: cityAndCommune || (typeof data.location === "string" ? data.location
-          : typeof data.localisation === "string" ? data.localisation
-            : typeof data.adresse === "string" ? data.adresse : undefined),
-        city: city || undefined,
-        commune: commune || undefined,
-      } as Vehicle;
-    });
+    return snapshot.docs.map((snapshotDocument) => toVehicle(record(snapshotDocument.data()), snapshotDocument.id));
   } catch (error) {
     console.error("Error fetching vehicles from Firestore:", error);
-    throw new Error("Le catalogue automobile est momentanément indisponible.");
+    return getPublicVehiclesFromApi();
   }
 }
 
 export async function getVehicleSales(): Promise<VehicleSale[]> {
   try {
     const response = await fetch(apiUrl("/api/vehicle-sales"));
-    const payload = await response.json() as { vehicleSales?: Array<{ id: string; data: FirestoreRecord }> };
-    if (!response.ok || !payload.vehicleSales) throw new Error("Catalogue indisponible");
-    const sales = payload.vehicleSales.map(({ id, data }) => {
+    let saleEntries: Array<{ id: string; data: FirestoreRecord }>;
+    if (response.status === 404) {
+      const pythonResponse = await fetch(apiUrl("/api/public/voitures/ventes"));
+      const pythonPayload = await pythonResponse.json() as { sales?: FirestoreRecord[]; detail?: string };
+      if (!pythonResponse.ok || !pythonPayload.sales) throw new Error(pythonPayload.detail || "Catalogue indisponible");
+      saleEntries = pythonPayload.sales.map((data) => ({ id: String(data.id), data }));
+    } else {
+      const payload = await response.json() as { vehicleSales?: Array<{ id: string; data: FirestoreRecord }> };
+      if (!response.ok || !payload.vehicleSales) throw new Error("Catalogue indisponible");
+      saleEntries = payload.vehicleSales;
+    }
+    const sales = saleEntries.map(({ id, data }) => {
       const imageUrls = Array.isArray(data.imageUrls) ? data.imageUrls.map(String).filter(Boolean) : [];
       const sale: VehicleSale = {
         id,
@@ -266,20 +294,32 @@ export async function getChauffeurs(): Promise<Chauffeur[]> {
 export async function getProviders(): Promise<SecondaryProvider[]> {
   try {
     const response = await fetch(apiUrl("/api/providers"));
-    const payload = await response.json() as { providers?: FirestoreRecord[]; error?: string };
-    if (!response.ok || !payload.providers) {
-      throw new Error(payload.error || "Le catalogue des prestataires est momentanément indisponible.");
+    let providerEntries: FirestoreRecord[];
+    if (response.status === 404) {
+      const pythonResponse = await fetch(apiUrl("/prestataires/api/public"));
+      const pythonPayload = await pythonResponse.json() as { prestataires?: FirestoreRecord[]; error?: string };
+      if (!pythonResponse.ok || !pythonPayload.prestataires) {
+        throw new Error(pythonPayload.error || "Le catalogue des prestataires est momentanément indisponible.");
+      }
+      providerEntries = pythonPayload.prestataires;
+    } else {
+      const payload = await response.json() as { providers?: FirestoreRecord[]; error?: string };
+      if (!response.ok || !payload.providers) {
+        throw new Error(payload.error || "Le catalogue des prestataires est momentanément indisponible.");
+      }
+      providerEntries = payload.providers;
     }
-    if (payload.providers.length === 0) {
+    if (providerEntries.length === 0) {
       return initialSecondaryProviders;
     }
     const providers: SecondaryProvider[] = [];
-    payload.providers.forEach((data) => {
-      const adminStatus = String(data.status || "").trim().toLowerCase();
+    providerEntries.forEach((data) => {
+      const adminStatus = String(data.status || data.statut || "").trim().toLowerCase();
       if (adminStatus === "indisponible") return;
       const rawSpecialty = String(data.specialty || data.categorie || "").trim().toLowerCase();
       const specialty = rawSpecialty.normalize("NFD").replace(/[\u0300-\u036f]/g, "") === "menagere"
         ? "ménagère" : rawSpecialty;
+      if (!["ménagère", "coiffeur", "professeur", "maquilleuse"].includes(specialty)) return;
       const skills = (Array.isArray(data.skills) ? data.skills.map(String) : [String(data.competences || "")])
         .flatMap((value) => value.split(/[,\n;]/))
         .map((item) => item.trim())
@@ -301,7 +341,8 @@ export async function getProviders(): Promise<SecondaryProvider[]> {
         commune: String(data.commune || "Non renseignée"),
         location: String(data.location || [data.commune, data.ville].filter(Boolean).join(", ") || "Non renseignée"),
         status: "disponible",
-        providerAvailability: data.providerAvailability === "indisponible" ? "indisponible" : "disponible",
+        providerAvailability: data.providerAvailability === "indisponible" || data.availability === "indisponible"
+          ? "indisponible" : "disponible",
       } as SecondaryProvider;
       if (data.verified === true || data.verified === "true") providers.push(provider);
     });

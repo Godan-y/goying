@@ -189,16 +189,15 @@ Ajoutez l'URL de production à `AllowedOrigins` lors du déploiement. Les objets
 
 ## Déploiement de `goyingservices.com`
 
-Le client React est servi sur `https://goyingservices.com` et l'API Node sécurisée est déployée séparément sur Render, sous `https://backend-goying.onrender.com`.
+Le client React est servi sur `https://goyingservices.com` et le backend de production est l'API **FastAPI Python** déjà déployée sur Render, sous `https://backend-goying.onrender.com`.
 
-1. Dans Render, créez un **Blueprint** depuis ce dépôt : Render détecte [`render.yaml`](./render.yaml) et crée le service `goying-api`.
-2. Renseignez dans Render les valeurs secrètes demandées par le Blueprint : `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_BUCKET_NAME`, `AWS_REGION`, `FIREBASE_API_KEY` et `FIREBASE_SERVICE_ACCOUNT_JSON`. Ne les ajoutez jamais au dépôt.
-3. L'API Render est accessible à `https://backend-goying.onrender.com`. Si vous ajoutez plus tard `api.goyingservices.com` comme domaine personnalisé, mettez à jour `VITE_API_BASE_URL` avant de reconstruire le client.
-4. Générez le client de production avec `VITE_API_BASE_URL=https://backend-goying.onrender.com npm.cmd run build`, puis publiez le contenu de `dist/` dans le répertoire web de `goyingservices.com` sur l'hébergement LiteSpeed.
-5. Dans Firebase Console > Authentication > Settings > Authorized domains, ajoutez `goyingservices.com` et `www.goyingservices.com`.
-6. Appliquez la configuration CORS S3 ci-dessus, avec les deux domaines HTTPS de production.
+1. Générez le client de production avec `VITE_API_BASE_URL=https://backend-goying.onrender.com npm.cmd run build`, puis publiez le contenu de `dist/` dans le répertoire web de `goyingservices.com` sur l'hébergement LiteSpeed.
+2. Dans Firebase Console > Authentication > Settings > Authorized domains, ajoutez `goyingservices.com` et `www.goyingservices.com`.
+3. Appliquez la configuration CORS S3 ci-dessus, avec les deux domaines HTTPS de production.
 
-L'API ne répond qu'aux origines indiquées dans `ALLOWED_ORIGINS`; cette variable Render contient déjà les deux domaines publics. Vérifiez le déploiement avec `https://backend-goying.onrender.com/health`, qui doit répondre `{ "status": "ok" }`.
+Le frontend utilise les routes publiques FastAPI `/api/maisons` et `/prestataires/api/public` lorsque les routes Node historiques ne sont pas disponibles. Vérifiez l'API Python dans Swagger : `https://backend-goying.onrender.com/docs`.
+
+[`render.yaml`](./render.yaml) et [`server.ts`](./server.ts) décrivent une API Node optionnelle pour les opérations qui ne sont pas encore exposées par FastAPI. Ne déployez pas ce service à la place du backend Python existant sans migrer ses routes et ses authentifications.
 
 ## Avis clients
 
