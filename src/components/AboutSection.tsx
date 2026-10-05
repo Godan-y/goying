@@ -87,7 +87,7 @@ export default function AboutSection({ isOpen, onClose }: AboutSectionProps) {
                   className="h-16 w-16 shrink-0 rounded-2xl border-2 border-white object-cover shadow-md"
                 />
                 <div>
-                  <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600"><Code2 className="h-3.5 w-3.5" />Développement web</p>
+                  <p className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-indigo-600"><Code2 className="h-3.5 w-3.5" />Développeur Web & Mobiles</p>
                   <h3 className="mt-0.5 text-sm font-bold text-slate-900">Gode Mukeng Mukanz</h3>
                   <p className="mt-1 flex items-start gap-1.5 text-[11px] leading-relaxed text-slate-600">
                     <GraduationCap className="mt-0.5 h-3.5 w-3.5 shrink-0 text-indigo-600" />
