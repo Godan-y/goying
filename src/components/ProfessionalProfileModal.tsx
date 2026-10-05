@@ -38,17 +38,21 @@ export default function ProfessionalProfileModal({
   const [saving, setSaving] = useState(false);
   const [missions, setMissions] = useState<Booking[]>([]);
   const [missionsError, setMissionsError] = useState("");
+  const [isMissionsLoading, setIsMissionsLoading] = useState(false);
   const [requestingCompletionId, setRequestingCompletionId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ images: string[]; index?: number; alt: string } | null>(null);
 
   useEffect(() => {
     if (!isOpen || !isApproved || !listing?.id || listing.managementMode !== "provider") return;
+    setIsMissionsLoading(true);
+    setMissionsError("");
     void getProviderBookings(listing.id)
       .then(setMissions)
       .catch((err) => {
         console.error("Error loading provider missions:", err);
         setMissionsError("Impossible de charger vos missions.");
-      });
+      })
+      .finally(() => setIsMissionsLoading(false));
   }, [isApproved, isOpen, listing?.id, listing?.managementMode]);
 
   if (!isOpen) return null;
@@ -221,7 +225,9 @@ export default function ProfessionalProfileModal({
               </p>
               {missionsError && <p className="mt-3 rounded-xl bg-red-50 p-3 text-xs text-red-700">{missionsError}</p>}
               <div className="mt-3 space-y-2">
-                {missions.length === 0 ? (
+                {isMissionsLoading ? (
+                  <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Chargement de vos missions...</p>
+                ) : missionsError ? null : missions.length === 0 ? (
                   <p className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">Aucune mission ne vous est attribuée pour le moment.</p>
                 ) : (
                   missions.map((mission) => (

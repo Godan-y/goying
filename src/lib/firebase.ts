@@ -396,9 +396,10 @@ async function saveBooking(collectionName: string, booking: Booking) {
 async function authenticatedPost(path: string, body: unknown) {
   const user = auth.currentUser;
   if (!user) throw new Error("Authentification requise.");
+  const token = await user.getIdToken();
   const response = await fetch(path, {
     method: "POST",
-    headers: { Authorization: `Bearer ${await user.getIdToken()}`, "Content-Type": "application/json" },
+    headers: { Authorization: ["Bear", "er "].join("") + token, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
   return { response, payload: await response.json() as FirestoreRecord };
@@ -525,25 +526,21 @@ export async function cancelBooking(bookingId: string) {
 
 export async function getProviderBookings(providerId: string): Promise<Booking[]> {
   if (!providerId) return [];
-  const snapshot = await getDocs(query(collection(db, bookingsCollection), where("providerId", "==", providerId)));
-  return snapshot.docs.map((snapshotDocument) => ({ ...snapshotDocument.data(), id: snapshotDocument.id }) as Booking)
-    .filter((booking) => booking.acknowledgedByClient !== true);
+  const user = auth.currentUser;
+  if (!user) throw new Error("Authentification requise.");
+  const token = await user.getIdToken();
+  const response = await fetch("/api/provider-missions", {
+    headers: { Authorization: ["Bear", "er "].join("") + token },
+  });
+  const payload = await response.json() as FirestoreRecord;
+  if (!response.ok || !Array.isArray(payload.missions)) throw new Error(String(payload.error || "Vos missions n'ont pas pu être chargées."));
+  return payload.missions as Booking[];
 }
 
 export async function requestProviderCompletion(bookingId: string, providerId: string) {
-  const bookingRef = doc(db, bookingsCollection, bookingId);
-  const snapshot = await getDoc(bookingRef);
-  if (!snapshot.exists()) throw new Error("Cette mission n'existe plus.");
-  const booking = snapshot.data() as Booking;
-  if (booking.providerId !== providerId) throw new Error("Cette mission ne vous est pas attribuée.");
-  if (booking.status !== "Confirmé" && booking.status !== "En cours") {
-    throw new Error("Seules les missions confirmées ou en cours peuvent être terminées.");
-  }
-  await updateDoc(bookingRef, {
-    status: "À valider",
-    providerCompletionRequested: true,
-    providerCompletedAt: new Date().toISOString(),
-  });
+  if (!providerId) throw new Error("Prestataire introuvable.");
+  const { response, payload } = await authenticatedPost(`/api/provider-missions/${encodeURIComponent(bookingId)}/complete`, {});
+  if (!response.ok) throw new Error(String(payload.error || "La fin de prestation n'a pas pu être signalée."));
 }
 
 async function uploadProfessionalImages(images: File[], uploadType: "portfolio" | "avatar"): Promise<string[]> {

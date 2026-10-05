@@ -419,6 +419,78 @@ app.post("/api/professional-session", authenticateFirebaseUser, async (request: 
   }
 });
 
+async function getVerifiedProviderForUser(request: AuthenticatedRequest) {
+  const userId = request.userId;
+  if (!userId) return undefined;
+  const { firestore } = getFirebaseAdmin();
+  const directAccount = await firestore.collection("professionalAccounts").doc(userId).get();
+  const account = directAccount.exists
+    ? directAccount
+    : (await firestore.collection("professionalAccounts").where("uid", "==", userId).limit(1).get()).docs[0];
+  const accountData = account?.exists ? account.data() : undefined;
+  const applicationId = typeof accountData?.applicationId === "string" ? accountData.applicationId : undefined;
+  const byApplication = applicationId
+    ? await firestore.collection("providers").where("applicationId", "==", applicationId).where("verified", "==", true).limit(1).get()
+    : undefined;
+  if (byApplication && !byApplication.empty) return byApplication.docs[0];
+  const email = request.decodedToken?.email?.toLowerCase();
+  if (!email) return undefined;
+  const byEmail = await firestore.collection("providers").where("email", "==", email).where("verified", "==", true).limit(1).get();
+  return byEmail.empty ? undefined : byEmail.docs[0];
+}
+
+app.get("/api/provider-missions", authenticateFirebaseUser, async (request: AuthenticatedRequest, response) => {
+  try {
+    const provider = await getVerifiedProviderForUser(request);
+    if (!provider) {
+      response.status(403).json({ error: "Cette action est réservée aux prestataires approuvés." });
+      return;
+    }
+    const { firestore } = getFirebaseAdmin();
+    const missions = await firestore.collection("bookings").where("providerId", "==", provider.id).get();
+    response.json({
+      missions: missions.docs
+        .map((mission) => ({ id: mission.id, ...(mission.data() as { acknowledgedByClient?: boolean }) }))
+        .filter((mission) => mission.acknowledgedByClient !== true),
+    });
+  } catch (error) {
+    console.error("Provider missions lookup failed:", error);
+    response.status(503).json({ error: "Vos missions sont temporairement indisponibles." });
+  }
+});
+
+app.post("/api/provider-missions/:bookingId/complete", authenticateFirebaseUser, async (request: AuthenticatedRequest, response) => {
+  const bookingId = request.params.bookingId;
+  if (!bookingId || bookingId.length > 128) {
+    response.status(400).json({ error: "Mission invalide." });
+    return;
+  }
+  try {
+    const provider = await getVerifiedProviderForUser(request);
+    if (!provider) {
+      response.status(403).json({ error: "Cette action est réservée aux prestataires approuvés." });
+      return;
+    }
+    const { firestore } = getFirebaseAdmin();
+    const bookingRef = firestore.collection("bookings").doc(bookingId);
+    await firestore.runTransaction(async (transaction) => {
+      const booking = await transaction.get(bookingRef);
+      if (!booking.exists || booking.data()?.providerId !== provider.id) throw new Error("Cette mission ne vous est pas attribuée.");
+      const status = booking.data()?.status;
+      if (status !== "Confirmé" && status !== "En cours") throw new Error("Seules les missions confirmées ou en cours peuvent être terminées.");
+      transaction.update(bookingRef, {
+        status: "À valider",
+        providerCompletionRequested: true,
+        providerCompletedAt: FieldValue.serverTimestamp(),
+      });
+    });
+    response.json({ success: true });
+  } catch (error) {
+    console.error("Provider completion request failed:", error);
+    response.status(400).json({ error: error instanceof Error ? error.message : "La fin de prestation n'a pas pu être signalée." });
+  }
+});
+
 app.post("/api/property-bookings", authenticateFirebaseUser, async (request: AuthenticatedRequest, response) => {
   const { propertyId, clientName, clientPhone, visitDate, visitTime } = request.body ?? {};
   if (![propertyId, clientName, clientPhone, visitDate, visitTime].every((value) => typeof value === "string" && value.trim())) {
