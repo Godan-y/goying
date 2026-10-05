@@ -162,7 +162,7 @@ export const initialChauffeurs: Chauffeur[] = [
   {
     id: "ch-1",
     name: "Mamadou Diop",
-    avatarUrl: "/provider-default-avatar.svg",
+    avatarUrl: "",
     rating: 4.9,
     reviewsCount: 124,
     pricePerMonth: 450,
@@ -185,7 +185,7 @@ export const initialChauffeurs: Chauffeur[] = [
   {
     id: "ch-2",
     name: "Armand Koffi",
-    avatarUrl: "/provider-default-avatar.svg",
+    avatarUrl: "",
     rating: 4.8,
     reviewsCount: 96,
     pricePerMonth: 380,
@@ -208,7 +208,7 @@ export const initialChauffeurs: Chauffeur[] = [
   {
     id: "ch-3",
     name: "Jean-Louis Mensah",
-    avatarUrl: "/provider-default-avatar.svg",
+    avatarUrl: "",
     rating: 4.7,
     reviewsCount: 54,
     pricePerMonth: 350,
@@ -235,7 +235,7 @@ export const initialSecondaryProviders: SecondaryProvider[] = [
     id: "prov-1",
     name: "Fatoumata Coulibaly",
     specialty: "ménagère",
-    avatarUrl: "/provider-default-avatar.svg",
+    avatarUrl: "",
     rating: 4.9,
     reviewsCount: 86,
     priceRate: "$250 / mois",

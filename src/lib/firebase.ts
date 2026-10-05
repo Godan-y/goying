@@ -265,7 +265,7 @@ export async function getChauffeurs(): Promise<Chauffeur[]> {
         ...data,
         id: snapshotDocument.id,
         name: String(data.name || [data.prenom, data.nom, data.postNom].filter(Boolean).join(" ") || "Chauffeur"),
-        avatarUrl: String(data.avatarUrl || data.photoUrl || "/provider-default-avatar.svg"),
+        avatarUrl: String(data.avatarUrl || data.photoUrl || ""),
         bio: String(data.bio || data.description || ""),
         pricePerMonth: Number(data.pricePerMonth ?? data.tarifMensuel ?? data.priceRate ?? data.pricePerKm ?? 0),
         currency: String(data.currency || data.devise || "$"),
@@ -328,8 +328,7 @@ export async function getProviders(): Promise<SecondaryProvider[]> {
         ...data,
         id: String(data.id),
         specialty,
-        avatarUrl: String(data.avatarUrl ||
-          "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200"),
+        avatarUrl: String(data.avatarUrl || data.photoUrl || ""),
         skills,
         experienceYears: Number(data.experienceYears ?? data.anneesExperience ?? 0),
         priceRate: String(data.priceRate || "").replace(/€/g, "$")

@@ -196,7 +196,7 @@ export default function OnboardingPortal({
       newDriver = {
         id: uniqueId,
         name: fullFullName,
-        avatarUrl: "/provider-default-avatar.svg",
+        avatarUrl: "",
         rating: 5.0,
         reviewsCount: 1,
         pricePerMonth,
@@ -253,7 +253,7 @@ export default function OnboardingPortal({
         id: uniqueId,
         name: fullFullName,
         specialty: selectedSpecialty as "ménagère" | "coiffeur" | "professeur" | "maquilleuse",
-        avatarUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200",
+        avatarUrl: "",
         rating: 5.0,
         reviewsCount: 1,
         priceRate: priceRate,

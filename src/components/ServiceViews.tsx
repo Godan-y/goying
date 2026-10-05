@@ -35,6 +35,7 @@ import {
   MessageCircle,
   ChevronLeft,
   ChevronRight,
+  UserRound,
   X
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -46,6 +47,14 @@ import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } fro
 interface ExpandableDescriptionProps {
   description: string;
   className?: string;
+}
+
+function ProfileSilhouette({ className, iconClassName }: { className: string; iconClassName: string }) {
+  return (
+    <div className={`flex items-center justify-center rounded-2xl border border-slate-100 bg-slate-100 text-slate-400 ${className}`} aria-label="Photo de profil non renseignée">
+      <UserRound className={iconClassName} aria-hidden="true" />
+    </div>
+  );
 }
 
 function ExpandableDescription({ description, className = "" }: ExpandableDescriptionProps) {
@@ -1238,9 +1247,11 @@ export function ChauffeurView({ chauffeurs, onAddBooking, onRequireLogin, sessio
           >
             {/* Avatar & Experience */}
             <div className="relative shrink-0">
-              <button type="button" aria-label={`Agrandir la photo de ${ch.name}`} onClick={() => setLightbox({ images: [ch.avatarUrl], alt: ch.name })} className="block cursor-zoom-in rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
-                <img src={ch.avatarUrl} alt={ch.name} referrerPolicy="no-referrer" className="h-20 w-20 rounded-2xl border border-slate-100 object-cover" />
-              </button>
+              {ch.avatarUrl ? (
+                <button type="button" aria-label={`Agrandir la photo de ${ch.name}`} onClick={() => setLightbox({ images: [ch.avatarUrl], alt: ch.name })} className="block cursor-zoom-in rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
+                  <img src={ch.avatarUrl} alt={ch.name} referrerPolicy="no-referrer" className="h-20 w-20 rounded-2xl border border-slate-100 object-cover" />
+                </button>
+              ) : <ProfileSilhouette className="h-20 w-20" iconClassName="h-9 w-9" />}
               {ch.verified && (
                 <span className="absolute -top-1.5 -right-1.5 rounded-full bg-blue-500 p-1 text-white shadow-md">
                   <CheckCircle className="h-3.5 w-3.5 fill-blue-500 text-white" />
@@ -1338,9 +1349,11 @@ export function ChauffeurView({ chauffeurs, onAddBooking, onRequireLogin, sessio
               className="relative z-10 my-0 w-full max-w-md max-h-[calc(100dvh-1rem)] overscroll-contain overflow-y-auto rounded-2xl bg-white p-3 shadow-2xl sm:my-auto sm:max-h-[calc(100dvh-2rem)] sm:rounded-3xl sm:p-6"
             >
               <div className="mb-4 flex items-center gap-3 sm:gap-4">
-                <button type="button" aria-label={`Agrandir la photo de ${selectedChauffeur.name}`} onClick={() => setLightbox({ images: [selectedChauffeur.avatarUrl], alt: selectedChauffeur.name })} className="shrink-0 cursor-zoom-in rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
-                  <img src={selectedChauffeur.avatarUrl} alt={selectedChauffeur.name} referrerPolicy="no-referrer" className="h-14 w-14 rounded-2xl object-cover sm:h-16 sm:w-16" />
-                </button>
+                {selectedChauffeur.avatarUrl ? (
+                  <button type="button" aria-label={`Agrandir la photo de ${selectedChauffeur.name}`} onClick={() => setLightbox({ images: [selectedChauffeur.avatarUrl], alt: selectedChauffeur.name })} className="shrink-0 cursor-zoom-in rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-600">
+                    <img src={selectedChauffeur.avatarUrl} alt={selectedChauffeur.name} referrerPolicy="no-referrer" className="h-14 w-14 rounded-2xl object-cover sm:h-16 sm:w-16" />
+                  </button>
+                ) : <ProfileSilhouette className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" iconClassName="h-7 w-7" />}
                 <div className="min-w-0">
                   <h3 className="break-words font-display text-lg font-bold text-slate-900">
                     Réserver {selectedChauffeur.name}
@@ -1635,9 +1648,11 @@ export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin,
           >
             {/* Header profile info */}
             <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-              <button type="button" aria-label={`Agrandir la photo de ${prov.name}`} onClick={() => setLightbox({ images: [prov.avatarUrl], alt: prov.name })} className="shrink-0 cursor-zoom-in rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600">
-                <img src={prov.avatarUrl} alt={prov.name} referrerPolicy="no-referrer" className="h-14 w-14 rounded-2xl border border-slate-100 object-cover" />
-              </button>
+              {prov.avatarUrl ? (
+                <button type="button" aria-label={`Agrandir la photo de ${prov.name}`} onClick={() => setLightbox({ images: [prov.avatarUrl], alt: prov.name })} className="shrink-0 cursor-zoom-in rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600">
+                  <img src={prov.avatarUrl} alt={prov.name} referrerPolicy="no-referrer" className="h-14 w-14 rounded-2xl border border-slate-100 object-cover" />
+                </button>
+              ) : <ProfileSilhouette className="h-14 w-14 shrink-0" iconClassName="h-7 w-7" />}
               <div className="min-w-0 flex-grow space-y-0.5">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <h3 className="min-w-0 break-words font-display text-sm font-bold leading-tight text-slate-900 sm:text-base">
@@ -1748,9 +1763,11 @@ export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin,
               className="relative z-10 my-0 w-full max-w-md max-h-[calc(100dvh-1rem)] overscroll-contain overflow-y-auto rounded-2xl bg-white p-3 shadow-2xl sm:my-auto sm:max-h-[calc(100dvh-2rem)] sm:rounded-3xl sm:p-6"
             >
               <div className="mb-4 flex items-center gap-3 sm:gap-4">
-                <button type="button" aria-label={`Agrandir la photo de ${selectedProvider.name}`} onClick={() => setLightbox({ images: [selectedProvider.avatarUrl], alt: selectedProvider.name })} className="shrink-0 cursor-zoom-in rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600">
-                  <img src={selectedProvider.avatarUrl} alt={selectedProvider.name} referrerPolicy="no-referrer" className="h-14 w-14 rounded-2xl object-cover sm:h-16 sm:w-16" />
-                </button>
+                {selectedProvider.avatarUrl ? (
+                  <button type="button" aria-label={`Agrandir la photo de ${selectedProvider.name}`} onClick={() => setLightbox({ images: [selectedProvider.avatarUrl], alt: selectedProvider.name })} className="shrink-0 cursor-zoom-in rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600">
+                    <img src={selectedProvider.avatarUrl} alt={selectedProvider.name} referrerPolicy="no-referrer" className="h-14 w-14 rounded-2xl object-cover sm:h-16 sm:w-16" />
+                  </button>
+                ) : <ProfileSilhouette className="h-14 w-14 shrink-0 sm:h-16 sm:w-16" iconClassName="h-7 w-7" />}
                 <div className="min-w-0">
                   <h3 className="break-words font-display text-lg font-bold text-slate-900">
                     Prendre RDV avec {selectedProvider.name}
