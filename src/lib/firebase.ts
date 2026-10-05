@@ -259,17 +259,16 @@ export async function getChauffeurs(): Promise<Chauffeur[]> {
 
 export async function getProviders(): Promise<SecondaryProvider[]> {
   try {
-    const providerRef = collection(db, providersCollection);
-    const snapshot = await getDocs(query(providerRef, where("verified", "==", true)));
-    if (snapshot.empty) {
-      const batch = writeBatch(db);
-      initialSecondaryProviders.forEach((provider) => batch.set(doc(providerRef, provider.id), provider));
-      await batch.commit();
+    const response = await fetch("/api/providers");
+    const payload = await response.json() as { providers?: FirestoreRecord[]; error?: string };
+    if (!response.ok || !payload.providers) {
+      throw new Error(payload.error || "Le catalogue des prestataires est momentanément indisponible.");
+    }
+    if (payload.providers.length === 0) {
       return initialSecondaryProviders;
     }
     const providers: SecondaryProvider[] = [];
-    snapshot.docs.forEach((snapshotDocument) => {
-      const data = record(snapshotDocument.data());
+    payload.providers.forEach((data) => {
       const adminStatus = String(data.status || "").trim().toLowerCase();
       if (adminStatus === "indisponible") return;
       const rawSpecialty = String(data.specialty || data.categorie || "").trim().toLowerCase();
@@ -281,7 +280,7 @@ export async function getProviders(): Promise<SecondaryProvider[]> {
         .filter(Boolean);
       const provider = {
         ...data,
-        id: snapshotDocument.id,
+        id: String(data.id),
         specialty,
         avatarUrl: String(data.avatarUrl ||
           "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200"),

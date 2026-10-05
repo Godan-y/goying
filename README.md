@@ -215,6 +215,10 @@ Les coiffeurs/coiffeuses, professeurs et maquilleuses utilisent deux états dist
 
 L’administration remet `status` à `disponible` lorsqu’elle souhaite republier le profil. Le prestataire peut à tout moment modifier uniquement `providerAvailability` depuis **Mon profil prestataire**. Cette modification est validée par l’API authentifiée et ne requiert pas d’ouverture publique des écritures Firestore.
 
+Le catalogue public utilise `GET /api/providers`. Il conserve la compatibilité avec les anciens profils dont `verified` a été enregistré sous forme de texte (`"true"`) ou dont la spécialité est encore présente uniquement dans le dossier professionnel approuvé.
+
+Lorsqu’un prestataire de service approuvé se reconnecte, l’API synchronise son dossier approuvé avec `providers` si le document public n’a pas été créé lors de la validation. Cette synchronisation marque le profil comme vérifié et aligne le statut du compte professionnel sur `Confirmé`.
+
 ## Réservations automobiles
 
 Les réservations de voitures sont enregistrées dans la collection Firestore `carBookings`. Les réservations de chauffeurs et des services à la personne restent dans `bookings`, tandis que les réservations immobilières restent dans `propertyBookings`.

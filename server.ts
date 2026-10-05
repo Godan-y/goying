@@ -247,6 +247,42 @@ app.get("/api/vehicle-sales", async (_request, response) => {
   }
 });
 
+app.get("/api/providers", async (_request, response) => {
+  try {
+    const { firestore } = getFirebaseAdmin();
+    const snapshot = await firestore.collection("providers").get();
+    const providers = await Promise.all(snapshot.docs.map(async (provider) => {
+      const data = provider.data();
+      const isVerified = data.verified === true || String(data.verified || "").trim().toLowerCase() === "true";
+      const adminStatus = String(data.status || "").trim().toLowerCase();
+      if (!isVerified || adminStatus === "indisponible") return undefined;
+
+      let specialty = String(data.specialty || data.categorie || data.category || "").trim().toLowerCase();
+      if (!specialty && typeof data.applicationId === "string" && data.applicationId) {
+        const application = await firestore.collection("professionalApplications").doc(data.applicationId).get();
+        if (application.exists) {
+          const applicationData = application.data();
+          const listing = applicationData?.listing as { specialty?: unknown } | undefined;
+          specialty = String(listing?.specialty || applicationData?.specialty || "").trim().toLowerCase();
+        }
+      }
+
+      const normalizedSpecialty = specialty.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      if (!["menagere", "coiffeur", "professeur", "maquilleuse"].includes(normalizedSpecialty)) return undefined;
+
+      return {
+        ...data,
+        id: provider.id,
+        specialty: normalizedSpecialty === "menagere" ? "ménagère" : normalizedSpecialty,
+      };
+    }));
+    response.json({ providers: providers.filter((provider): provider is NonNullable<typeof provider> => Boolean(provider)) });
+  } catch (error) {
+    console.error("Provider catalog lookup failed:", error);
+    response.status(503).json({ error: "Le catalogue des prestataires est momentanément indisponible." });
+  }
+});
+
 app.post("/api/vehicle-purchase-requests", authenticateFirebaseUser, async (request: AuthenticatedRequest, response) => {
   const userId = request.userId;
   const { vehicleId, buyerName, buyerWhatsApp, buyerCommune, consent } = request.body ?? {};
@@ -389,17 +425,40 @@ app.post("/api/professional-session", authenticateFirebaseUser, async (request: 
       : (await firestore.collection("professionalApplications").where("session.uid", "==", request.userId).limit(1).get()).docs[0];
     const applicationData = application?.exists ? application.data() : undefined;
     const applicationId = application?.id || accountData.applicationId;
-    const verifiedProviders = applicationId
-      ? await firestore.collection("providers").where("applicationId", "==", applicationId).where("verified", "==", true).limit(1).get()
-      : await firestore.collection("providers").where("email", "==", request.decodedToken?.email?.toLowerCase() || "").where("verified", "==", true).limit(1).get();
-    const provider = verifiedProviders.empty ? undefined : verifiedProviders.docs[0];
     const normalizeStatus = (value: unknown) => {
       const status = String(value || "").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
       if (["refuse", "rejete", "rejected", "declined"].includes(status)) return "Refusé";
       if (["confirme", "approuve", "approved"].includes(status)) return "Confirmé";
       return "En attente";
     };
-    const status = provider?.data().verified === true
+    const verifiedProviders = applicationId
+      ? await firestore.collection("providers").where("applicationId", "==", applicationId).where("verified", "==", true).limit(1).get()
+      : await firestore.collection("providers").where("email", "==", request.decodedToken?.email?.toLowerCase() || "").where("verified", "==", true).limit(1).get();
+    const provider = verifiedProviders.empty ? undefined : verifiedProviders.docs[0];
+    const applicationListing = applicationData?.listing as Record<string, unknown> | undefined;
+    const applicationSpecialty = String(applicationListing?.specialty || applicationData?.specialty || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+    const isServiceProvider = ["menagere", "coiffeur", "professeur", "maquilleuse"].includes(applicationSpecialty);
+    let publishedListing = provider?.data();
+
+    if (!publishedListing && normalizeStatus(applicationData?.status) === "Confirmé" && applicationListing && isServiceProvider) {
+      const providerId = String(applicationListing.id || `provider-${applicationId}`);
+      publishedListing = {
+        ...applicationListing,
+        specialty: applicationSpecialty === "menagere" ? "ménagère" : applicationSpecialty,
+        applicationId,
+        email: String(accountData.email || request.decodedToken?.email || "").toLowerCase(),
+        verified: true,
+        status: String(applicationListing.status || "disponible").toLowerCase() === "indisponible" ? "indisponible" : "disponible",
+      };
+      await firestore.collection("providers").doc(providerId).set(publishedListing, { merge: true });
+      await account.ref.set({ status: "Confirmé" }, { merge: true });
+    }
+
+    const status = publishedListing?.verified === true
       ? "Confirmé"
       : normalizeStatus(applicationData?.status) === "Refusé" || normalizeStatus(accountData.status) === "Refusé"
         ? "Refusé"
@@ -411,7 +470,7 @@ app.post("/api/professional-session", authenticateFirebaseUser, async (request: 
       fullName: String(accountData.fullName || ""),
       specialty: typeof accountData.specialty === "string" ? accountData.specialty : undefined,
       providerStatus: status,
-      providerListing: provider ? { ...provider.data(), id: provider.id } : undefined,
+      providerListing: publishedListing ? { ...publishedListing, id: provider?.id || String(applicationListing?.id || `provider-${applicationId}`) } : undefined,
     });
   } catch (error) {
     console.error("Professional session lookup failed:", error);
