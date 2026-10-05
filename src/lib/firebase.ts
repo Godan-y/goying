@@ -508,7 +508,7 @@ export async function submitPartnershipRequest(request: unknown): Promise<string
 export async function submitBookingReview(bookingId: string, rating: number, comment: string) {
   const { response, payload } = await authenticatedPost("/api/booking-reviews", { bookingId, rating, comment });
   if (!response.ok || typeof payload.rating !== "number" || typeof payload.reviewsCount !== "number") {
-    throw new Error(String(payload.error || "Votre avis n'a pas pu être enregistré."));
+    throw new Error(String(payload.error || payload.detail || "Votre avis n'a pas pu être enregistré."));
   }
   return { rating: payload.rating, reviewsCount: payload.reviewsCount };
 }
