@@ -206,6 +206,15 @@ adminCompletedAt: date de validation
 
 Le client peut alors laisser une note et un avis.
 
+### Disponibilité des prestataires autonomes
+
+Les coiffeurs/coiffeuses, professeurs et maquilleuses utilisent deux états distincts :
+
+- `status: "indisponible"` est le contrôle administrateur. Le profil est retiré de la liste publique, mais le prestataire conserve l’accès complet à son profil et à ses informations.
+- `providerAvailability: "indisponible"` est le contrôle personnel du prestataire. Son profil reste visible dans la liste publique, mais la réservation est bloquée avec un message d’indisponibilité.
+
+L’administration remet `status` à `disponible` lorsqu’elle souhaite republier le profil. Le prestataire peut à tout moment modifier uniquement `providerAvailability` depuis **Mon profil prestataire**.
+
 ## Réservations automobiles
 
 Les réservations de voitures sont enregistrées dans la collection Firestore `carBookings`. Les réservations de chauffeurs et des services à la personne restent dans `bookings`, tandis que les réservations immobilières restent dans `propertyBookings`.

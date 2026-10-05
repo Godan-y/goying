@@ -110,6 +110,7 @@ export interface SecondaryProvider {
   city: string;
   commune: string;
   status: "disponible" | "indisponible";
+  providerAvailability?: "disponible" | "indisponible";
   verified: boolean;
   skills: string[];
   portfolio?: string[];

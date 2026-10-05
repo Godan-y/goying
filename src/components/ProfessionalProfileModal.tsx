@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { ClipboardCheck, Upload, UserRound, X, Trash2 } from "lucide-react";
+import { ClipboardCheck, CircleAlert, Power, Upload, UserRound, X, Trash2 } from "lucide-react";
 import { Booking, Chauffeur, SecondaryProvider, UserSession } from "../types";
-import { getProviderBookings, requestProviderCompletion, updateProfessionalProfile } from "../lib/firebase";
+import { getProviderBookings, requestProviderCompletion, updateProfessionalProfile, updateProviderAvailability } from "../lib/firebase";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
 import { Lightbox } from "./Lightbox";
 
@@ -41,6 +41,11 @@ export default function ProfessionalProfileModal({
   const [isMissionsLoading, setIsMissionsLoading] = useState(false);
   const [requestingCompletionId, setRequestingCompletionId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ images: string[]; index?: number; alt: string } | null>(null);
+  const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false);
+  const [providerAvailability, setProviderAvailability] = useState<"disponible" | "indisponible">(
+    listingData.providerAvailability === "indisponible" ? "indisponible" : "disponible"
+  );
+  const isAdminUnavailable = listingData.status === "indisponible";
 
   useEffect(() => {
     if (!isOpen || !isApproved || !listing?.id || listing.managementMode !== "provider") return;
@@ -138,6 +143,25 @@ export default function ProfessionalProfileModal({
     }
   };
 
+  const toggleAvailability = async () => {
+    if (!listing || listing.managementMode !== "provider") return;
+    const nextAvailability = providerAvailability === "disponible" ? "indisponible" : "disponible";
+    setIsUpdatingAvailability(true);
+    setError("");
+    try {
+      await updateProviderAvailability(session, nextAvailability);
+      setProviderAvailability(nextAvailability);
+      onSaved({
+        ...session,
+        providerListing: { ...listing, providerAvailability: nextAvailability } as UserSession["providerListing"],
+      });
+    } catch (availabilityError) {
+      setError(availabilityError instanceof Error ? availabilityError.message : "Impossible de modifier votre disponibilité.");
+    } finally {
+      setIsUpdatingAvailability(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/60" onClick={onClose} />
@@ -157,6 +181,20 @@ export default function ProfessionalProfileModal({
           </p>
         )}
         {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700">{error}</p>}
+        {isApproved && listing?.managementMode === "provider" && (
+          <section className={`mt-4 flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${isAdminUnavailable ? "border-red-200 bg-red-50" : providerAvailability === "indisponible" ? "border-amber-200 bg-amber-50" : "border-emerald-100 bg-emerald-50"}`}>
+            <div className="flex min-w-0 items-start gap-2">
+              <CircleAlert className={`mt-0.5 h-5 w-5 shrink-0 ${isAdminUnavailable ? "text-red-600" : providerAvailability === "indisponible" ? "text-amber-600" : "text-emerald-600"}`} />
+              <div>
+                <p className="text-sm font-bold text-slate-900">{isAdminUnavailable ? "Indisponibilité définie par Goying" : providerAvailability === "indisponible" ? "Vous êtes actuellement indisponible" : "Vous êtes disponible"}</p>
+                <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{isAdminUnavailable ? "Votre profil n'est pas visible publiquement, mais vous conservez l'accès complet à vos informations et pouvez les modifier." : providerAvailability === "indisponible" ? "Votre profil reste visible publiquement, mais les clients ne peuvent pas prendre rendez-vous avec vous." : "Les clients peuvent actuellement prendre rendez-vous avec vous."}</p>
+              </div>
+            </div>
+            <button type="button" disabled={isUpdatingAvailability} onClick={() => void toggleAvailability()} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
+              <Power className="h-3.5 w-3.5" />{isUpdatingAvailability ? "Mise à jour..." : providerAvailability === "disponible" ? "Je suis indisponible" : "Je suis disponible"}
+            </button>
+          </section>
+        )}
         <div className="mt-5 flex items-center gap-4 rounded-2xl bg-slate-50 p-4">
           {avatarUrl ? (
             <button type="button" aria-label="Agrandir la photo de profil" onClick={() => setLightbox({ images: [avatarUrl], alt: "Photo de profil" })} className="cursor-zoom-in rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600">

@@ -70,8 +70,11 @@ service cloud.firestore {
         resource.data.email == request.auth.token.email &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           "name", "phone", "country", "city", "commune", "bio", "specialty",
-          "priceRate", "avatarUrl", "portfolio"
-        ])
+          "priceRate", "avatarUrl", "portfolio", "providerAvailability"
+        ]) &&
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["providerAvailability"]) ||
+         request.resource.data.providerAvailability == "disponible" ||
+         request.resource.data.providerAvailability == "indisponible")
       );
       allow create, delete: if admin();
     }

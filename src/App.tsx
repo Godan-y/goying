@@ -233,10 +233,6 @@ export default function App() {
         setChauffeurs((prev) => prev.map((provider) =>
           provider.id === newBooking.providerId ? { ...provider, status: "indisponible" } : provider
         ));
-      } else {
-        setProviders((prev) => prev.map((provider) =>
-          provider.id === newBooking.providerId ? { ...provider, status: "indisponible" } : provider
-        ));
       }
     }
 
@@ -254,7 +250,6 @@ export default function App() {
         ? (provider: Chauffeur) => provider.id === cancelledBooking.providerId ? { ...provider, status: "disponible" as const } : provider
         : undefined;
       if (updateProvider) setChauffeurs((prev) => prev.map(updateProvider));
-      else setProviders((prev) => prev.map((provider) => provider.id === cancelledBooking.providerId ? { ...provider, status: "disponible" } : provider));
     }
   };
 

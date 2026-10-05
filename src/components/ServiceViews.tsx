@@ -1486,6 +1486,7 @@ export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin,
   const [serviceLocationType, setServiceLocationType] = useState<"Maison" | "Entreprise">("Maison");
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [lightbox, setLightbox] = useState<{ images: string[]; index?: number; alt: string } | null>(null);
+  const [providerUnavailableNotice, setProviderUnavailableNotice] = useState("");
 
   const specsList = [
     { id: "ménagère" as const, label: "Ménagères", icon: HomeIcon, color: "text-emerald-600 bg-emerald-50" },
@@ -1496,7 +1497,6 @@ export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin,
 
   const normalizedProviderSearch = providerSearch.trim().toLowerCase();
   const filteredProviders = providers.filter((provider) =>
-    provider.status === "disponible" &&
     provider.specialty === activeSpec && [
       provider.name,
       provider.country,
@@ -1507,9 +1507,23 @@ export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin,
     ].some((value) => value.toLowerCase().includes(normalizedProviderSearch))
   );
 
+  const selectProvider = (provider: SecondaryProvider) => {
+    if (provider.id === session.providerListing?.id) return;
+    if (provider.providerAvailability === "indisponible") {
+      setProviderUnavailableNotice("Désolé, ce prestataire est actuellement indisponible. Veuillez réessayer ultérieurement.");
+      return;
+    }
+    setProviderUnavailableNotice("");
+    setSelectedProvider(provider);
+  };
+
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedProvider || !bookingDate) return;
+    if (selectedProvider.providerAvailability === "indisponible") {
+      setPhoneError("Désolé, ce prestataire est actuellement indisponible. Veuillez réessayer ultérieurement.");
+      return;
+    }
     if (!session.isLoggedIn || !session.uid) {
       setPhoneError("Connectez-vous à votre compte pour effectuer une réservation.");
       onRequireLogin();
@@ -1610,6 +1624,7 @@ export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin,
           aria-label="Rechercher un prestataire"
         />
       </div>
+      {providerUnavailableNotice && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">{providerUnavailableNotice}</p>}
 
       {/* Profile list */}
       <div className="grid gap-6 sm:grid-cols-2">
@@ -1631,6 +1646,7 @@ export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin,
                   <span className="shrink-0 rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-700">
                     Vérifié
                   </span>
+                  {prov.providerAvailability === "indisponible" && <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-700">Indisponible</span>}
                 </div>
                 <p className="text-[11px] font-semibold text-slate-400 capitalize">
                   {prov.experienceYears} ans d'expérience
@@ -1696,10 +1712,12 @@ export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin,
               <button
                 type="button"
                 disabled={prov.id === session.providerListing?.id}
-                onClick={() => setSelectedProvider(prov)}
-                className="w-full rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none sm:w-auto sm:py-2"
+                onClick={() => selectProvider(prov)}
+                className={`w-full rounded-xl px-4 py-2.5 text-xs font-bold shadow-sm transition-all disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 disabled:shadow-none sm:w-auto sm:py-2 ${
+                  prov.providerAvailability === "indisponible" ? "bg-amber-100 text-amber-800 hover:bg-amber-200" : "bg-slate-900 text-white hover:bg-slate-800"
+                }`}
               >
-                {prov.id === session.providerListing?.id ? "Votre profil" : "Prendre RDV"}
+                {prov.id === session.providerListing?.id ? "Votre profil" : prov.providerAvailability === "indisponible" ? "Indisponible" : "Prendre RDV"}
               </button>
             </div>
           </div>

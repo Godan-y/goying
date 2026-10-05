@@ -270,6 +270,8 @@ export async function getProviders(): Promise<SecondaryProvider[]> {
     const providers: SecondaryProvider[] = [];
     snapshot.docs.forEach((snapshotDocument) => {
       const data = record(snapshotDocument.data());
+      const adminStatus = String(data.status || "").trim().toLowerCase();
+      if (adminStatus === "indisponible") return;
       const rawSpecialty = String(data.specialty || data.categorie || "").trim().toLowerCase();
       const specialty = rawSpecialty.normalize("NFD").replace(/[\u0300-\u036f]/g, "") === "menagere"
         ? "ménagère" : rawSpecialty;
@@ -293,7 +295,8 @@ export async function getProviders(): Promise<SecondaryProvider[]> {
         city: String(data.city || data.ville || data.location || "Non renseignée"),
         commune: String(data.commune || "Non renseignée"),
         location: String(data.location || [data.commune, data.ville].filter(Boolean).join(", ") || "Non renseignée"),
-        status: data.status === "indisponible" ? "indisponible" : "disponible",
+        status: "disponible",
+        providerAvailability: data.providerAvailability === "indisponible" ? "indisponible" : "disponible",
       } as SecondaryProvider;
       if (data.verified === true || data.verified === "true") providers.push(provider);
     });
@@ -388,7 +391,7 @@ async function saveBooking(collectionName: string, booking: Booking) {
     createdAt: new Date().toISOString(),
     acknowledgedByClient: false,
   }));
-  if (booking.providerId && booking.providerCollection) {
+  if (booking.providerId && booking.providerCollection === "chauffeurs") {
     await setDoc(doc(db, booking.providerCollection, booking.providerId), { status: "indisponible" }, { merge: true });
   }
 }
@@ -515,7 +518,7 @@ export async function acknowledgeBooking(bookingId: string) {
 export async function cancelBooking(bookingId: string) {
   try {
     const { bookingRef, booking } = await findBooking(bookingId);
-    if (booking.providerId && booking.providerCollection) {
+    if (booking.providerId && booking.providerCollection === "chauffeurs") {
       await updateDoc(doc(db, booking.providerCollection, booking.providerId), { status: "disponible" });
     }
     await deleteDoc(bookingRef);
@@ -589,6 +592,14 @@ export async function updateProfessionalProfile(
   };
   await updateDoc(doc(db, providersCollection, listing.id), listingUpdate);
   return { avatarUrl, portfolio };
+}
+
+export async function updateProviderAvailability(session: UserSession, providerAvailability: "disponible" | "indisponible") {
+  const listing = session.providerListing;
+  if (session.providerStatus !== "Confirmé" || !listing || listing.managementMode !== "provider") {
+    throw new Error("Seuls les prestataires approuvés peuvent modifier leur disponibilité.");
+  }
+  await updateDoc(doc(db, providersCollection, listing.id), { providerAvailability });
 }
 
 export async function saveUser(session: UserSession) {
