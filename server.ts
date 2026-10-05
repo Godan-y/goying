@@ -491,6 +491,26 @@ app.post("/api/provider-missions/:bookingId/complete", authenticateFirebaseUser,
   }
 });
 
+app.post("/api/provider-availability", authenticateFirebaseUser, async (request: AuthenticatedRequest, response) => {
+  const providerAvailability = request.body?.providerAvailability;
+  if (providerAvailability !== "disponible" && providerAvailability !== "indisponible") {
+    response.status(400).json({ error: "Disponibilité invalide." });
+    return;
+  }
+  try {
+    const provider = await getVerifiedProviderForUser(request);
+    if (!provider) {
+      response.status(403).json({ error: "Cette action est réservée aux prestataires approuvés." });
+      return;
+    }
+    await provider.ref.update({ providerAvailability });
+    response.json({ providerAvailability });
+  } catch (error) {
+    console.error("Provider availability update failed:", error);
+    response.status(503).json({ error: "Votre disponibilité n'a pas pu être mise à jour. Veuillez réessayer." });
+  }
+});
+
 app.post("/api/property-bookings", authenticateFirebaseUser, async (request: AuthenticatedRequest, response) => {
   const { propertyId, clientName, clientPhone, visitDate, visitTime } = request.body ?? {};
   if (![propertyId, clientName, clientPhone, visitDate, visitTime].every((value) => typeof value === "string" && value.trim())) {
@@ -869,6 +889,14 @@ app.post("/api/portfolio-uploads", authenticateFirebaseUser, requireApprovedProf
         : "Impossible de préparer l'envoi des images vers S3.",
     });
   }
+});
+
+app.use((error: Error & { status?: number; type?: string }, _request: Request, response: Response, next: NextFunction) => {
+  if (error instanceof SyntaxError && error.status === 400 && error.type === "entity.parse.failed") {
+    response.status(400).json({ error: "Le corps de la requête doit être un JSON valide." });
+    return;
+  }
+  next(error);
 });
 
 app.listen(port, () => {

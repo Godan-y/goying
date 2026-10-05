@@ -12,6 +12,10 @@ interface ProfessionalProfileModalProps {
   onSaved: (session: UserSession) => void;
 }
 
+function hasPersonalAvailabilityControl(listing: Partial<SecondaryProvider | Chauffeur> | undefined) {
+  return Boolean(listing) && !("vehicleModel" in listing);
+}
+
 export default function ProfessionalProfileModal({
   isOpen,
   session,
@@ -29,6 +33,7 @@ export default function ProfessionalProfileModal({
   const [commune, setCommune] = useState(listingData.commune || "");
   const [bio, setBio] = useState(listingData.bio || "");
   const [specialty, setSpecialty] = useState(session.specialty || "");
+  const [skills, setSkills] = useState((listingData.skills || []).join(", "));
   const [priceRate, setPriceRate] = useState(String(listingData.priceRate || ""));
   const [portfolio, setPortfolio] = useState<string[]>(listingData.portfolio || []);
   const [newPortfolioImages, setNewPortfolioImages] = useState<File[]>([]);
@@ -46,9 +51,10 @@ export default function ProfessionalProfileModal({
     listingData.providerAvailability === "indisponible" ? "indisponible" : "disponible"
   );
   const isAdminUnavailable = listingData.status === "indisponible";
+  const hasAvailabilityControl = hasPersonalAvailabilityControl(listingData);
 
   useEffect(() => {
-    if (!isOpen || !isApproved || !listing?.id || listing.managementMode !== "provider") return;
+    if (!isOpen || !isApproved || !listing?.id || !hasAvailabilityControl) return;
     setIsMissionsLoading(true);
     setMissionsError("");
     void getProviderBookings(listing.id)
@@ -58,7 +64,7 @@ export default function ProfessionalProfileModal({
         setMissionsError("Impossible de charger vos missions.");
       })
       .finally(() => setIsMissionsLoading(false));
-  }, [isApproved, isOpen, listing?.id, listing?.managementMode]);
+  }, [hasAvailabilityControl, isApproved, isOpen, listing?.id]);
 
   if (!isOpen) return null;
   if (isRejected) {
@@ -101,8 +107,9 @@ export default function ProfessionalProfileModal({
     setSaving(true);
     setError("");
     try {
+      const normalizedSkills = skills.split(",").map((skill) => skill.trim()).filter(Boolean);
       const updatedProfile = await updateProfessionalProfile(session, {
-        fullName, phone: internationalPhone, country, city, commune, bio, specialty, priceRate, avatarUrl,
+        fullName, phone: internationalPhone, country, city, commune, bio, specialty, skills: normalizedSkills, priceRate, avatarUrl,
         portfolio: portfolio.filter(Boolean),
       }, newPortfolioImages, newAvatarImage);
       onSaved({
@@ -112,7 +119,7 @@ export default function ProfessionalProfileModal({
         specialty,
         providerListing: {
           ...(listing || {}),
-          name: fullName, phone: internationalPhone, country, city, commune, bio, specialty, priceRate,
+          name: fullName, phone: internationalPhone, country, city, commune, bio, specialty, skills: normalizedSkills, priceRate,
           avatarUrl: updatedProfile.avatarUrl,
           portfolio: updatedProfile.portfolio,
         } as UserSession["providerListing"],
@@ -144,7 +151,7 @@ export default function ProfessionalProfileModal({
   };
 
   const toggleAvailability = async () => {
-    if (!listing || listing.managementMode !== "provider") return;
+    if (!listing || !hasAvailabilityControl) return;
     const nextAvailability = providerAvailability === "disponible" ? "indisponible" : "disponible";
     setIsUpdatingAvailability(true);
     setError("");
@@ -181,7 +188,12 @@ export default function ProfessionalProfileModal({
           </p>
         )}
         {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700">{error}</p>}
-        {isApproved && listing?.managementMode === "provider" && (
+        {isApproved && hasAvailabilityControl && (
+          <button type="button" disabled={isUpdatingAvailability} onClick={() => void toggleAvailability()} className="absolute right-14 top-4 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
+            <Power className="h-3.5 w-3.5" />{isUpdatingAvailability ? "Mise à jour..." : providerAvailability === "disponible" ? "Je suis indisponible" : "Je suis disponible"}
+          </button>
+        )}
+        {isApproved && hasAvailabilityControl && (
           <section className={`mt-4 flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${isAdminUnavailable ? "border-red-200 bg-red-50" : providerAvailability === "indisponible" ? "border-amber-200 bg-amber-50" : "border-emerald-100 bg-emerald-50"}`}>
             <div className="flex min-w-0 items-start gap-2">
               <CircleAlert className={`mt-0.5 h-5 w-5 shrink-0 ${isAdminUnavailable ? "text-red-600" : providerAvailability === "indisponible" ? "text-amber-600" : "text-emerald-600"}`} />
@@ -190,9 +202,6 @@ export default function ProfessionalProfileModal({
                 <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{isAdminUnavailable ? "Votre profil n'est pas visible publiquement, mais vous conservez l'accès complet à vos informations et pouvez les modifier." : providerAvailability === "indisponible" ? "Votre profil reste visible publiquement, mais les clients ne peuvent pas prendre rendez-vous avec vous." : "Les clients peuvent actuellement prendre rendez-vous avec vous."}</p>
               </div>
             </div>
-            <button type="button" disabled={isUpdatingAvailability} onClick={() => void toggleAvailability()} className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
-              <Power className="h-3.5 w-3.5" />{isUpdatingAvailability ? "Mise à jour..." : providerAvailability === "disponible" ? "Je suis indisponible" : "Je suis disponible"}
-            </button>
           </section>
         )}
         <div className="mt-5 flex items-center gap-4 rounded-2xl bg-slate-50 p-4">
@@ -225,14 +234,16 @@ export default function ProfessionalProfileModal({
             ["Ville", city, setCity],
             ["Commune", commune, setCommune],
             ["Spécialité", specialty, setSpecialty],
+            ["Compétences clés", skills, setSkills],
             ["Tarif", priceRate, setPriceRate],
           ].map(([label, value, setter]) => (
             <label key={label as string} className="text-xs font-semibold text-slate-600">
               {label as string}
-              <input type={label === "Téléphone / WhatsApp" ? "tel" : "text"} placeholder={label === "Téléphone / WhatsApp" ? "+243 857068014" : undefined} value={value as string} disabled={!isApproved} onChange={(e) => (setter as (value: string) => void)(label === "Téléphone / WhatsApp" ? normalizePhoneInput(e.target.value) : e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100" />
+              <input type={label === "Téléphone / WhatsApp" ? "tel" : "text"} placeholder={label === "Téléphone / WhatsApp" ? "+243 857068014" : label === "Compétences clés" ? "Ex. Brushing, Tresses, Soins" : undefined} value={value as string} disabled={!isApproved} onChange={(e) => (setter as (value: string) => void)(label === "Téléphone / WhatsApp" ? normalizePhoneInput(e.target.value) : e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100" />
             </label>
           ))}
           <p className="text-[11px] text-slate-500 sm:col-span-2">{internationalPhoneHint}</p>
+          <p className="text-[11px] text-slate-500 sm:col-span-2">Séparez chaque compétence par une virgule.</p>
           <label className="text-xs font-semibold text-slate-600 sm:col-span-2">
             Présentation
             <textarea value={bio} disabled={!isApproved} onChange={(e) => setBio(e.target.value)} rows={3} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100" />
@@ -252,7 +263,7 @@ export default function ProfessionalProfileModal({
             <input type="file" disabled={!isApproved} accept="image/jpeg,image/png,image/webp" multiple onChange={(e) => setNewPortfolioImages(Array.from(e.target.files || []))} className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm disabled:cursor-not-allowed disabled:bg-slate-100" />
             <p className="text-[11px] text-slate-500">JPEG, PNG ou WebP, 6 images maximum et 5 Mo par image.</p>
           </div>
-          {listing?.managementMode === "provider" && (
+          {hasAvailabilityControl && (
             <section className="mt-6 border-t border-slate-100 pt-5">
               <div className="flex items-center gap-2">
                 <ClipboardCheck className="h-4 w-4 text-emerald-600" />

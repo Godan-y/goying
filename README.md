@@ -153,7 +153,7 @@ les chauffeurs sont recuper depuis la table chauffeur et le statut de la verific
 
 Les portfolios des coiffeurs/coiffeuses et maquilleuses sont envoyés dans le bucket S3 configuré, sous le préfixe `goying/portfolios/<uid>/`.
 
-Les prestataires validés peuvent aussi ajouter leur photo de profil depuis **Mon profil prestataire**. Elle est stockée séparément sous `goying/avatars/<uid>/` et devient la photo affichée sur leur fiche publique.
+Les prestataires validés peuvent aussi ajouter leur photo de profil et modifier leurs **compétences clés** depuis **Mon profil prestataire**. Saisissez les compétences en les séparant par des virgules ; elles deviennent les étiquettes affichées sur leur fiche publique. La photo est stockée séparément sous `goying/avatars/<uid>/` et devient la photo affichée sur leur fiche publique.
 
 Copiez les variables de [`.env.example`](.env.example) vers `.env`, puis renseignez-les. Les clés AWS restent exclusivement côté serveur : ne les préfixez jamais par `VITE_`.
 
@@ -213,7 +213,7 @@ Les coiffeurs/coiffeuses, professeurs et maquilleuses utilisent deux états dist
 - `status: "indisponible"` est le contrôle administrateur. Le profil est retiré de la liste publique, mais le prestataire conserve l’accès complet à son profil et à ses informations.
 - `providerAvailability: "indisponible"` est le contrôle personnel du prestataire. Son profil reste visible dans la liste publique, mais la réservation est bloquée avec un message d’indisponibilité.
 
-L’administration remet `status` à `disponible` lorsqu’elle souhaite republier le profil. Le prestataire peut à tout moment modifier uniquement `providerAvailability` depuis **Mon profil prestataire**.
+L’administration remet `status` à `disponible` lorsqu’elle souhaite republier le profil. Le prestataire peut à tout moment modifier uniquement `providerAvailability` depuis **Mon profil prestataire**. Cette modification est validée par l’API authentifiée et ne requiert pas d’ouverture publique des écritures Firestore.
 
 ## Réservations automobiles
 

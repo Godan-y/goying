@@ -569,14 +569,16 @@ export async function updateProfessionalProfile(
   session: UserSession,
   profile: {
     fullName: string; phone: string; country: string; city: string; commune: string; bio: string;
-    specialty: string; priceRate: string; avatarUrl: string; portfolio: string[];
+    specialty: string; skills: string[]; priceRate: string; avatarUrl: string; portfolio: string[];
   },
   newPortfolioImages: File[] = [],
   newAvatarImage?: File,
 ) {
   const listing = session.providerListing;
   if (session.providerStatus !== "Confirmé") throw new Error("Votre dossier doit être approuvé avant toute modification du profil.");
-  if (!listing || listing.managementMode !== "provider") throw new Error("Ce profil prestataire ne peut pas être modifié.");
+  if (!listing || ("vehicleModel" in listing)) {
+    throw new Error("Ce profil prestataire ne peut pas être modifié.");
+  }
   if (newPortfolioImages.length > 6) throw new Error("Vous pouvez ajouter au maximum 6 images de portfolio à la fois.");
 
   const [uploadedPortfolio, uploadedAvatar] = await Promise.all([
@@ -587,7 +589,7 @@ export async function updateProfessionalProfile(
   const avatarUrl = uploadedAvatar[0] || profile.avatarUrl || listing.avatarUrl;
   const listingUpdate = {
     name: profile.fullName, phone: profile.phone, country: profile.country, city: profile.city,
-    commune: profile.commune, bio: profile.bio, specialty: profile.specialty, priceRate: profile.priceRate,
+    commune: profile.commune, bio: profile.bio, specialty: profile.specialty, skills: profile.skills, priceRate: profile.priceRate,
     avatarUrl, portfolio,
   };
   await updateDoc(doc(db, providersCollection, listing.id), listingUpdate);
@@ -596,10 +598,13 @@ export async function updateProfessionalProfile(
 
 export async function updateProviderAvailability(session: UserSession, providerAvailability: "disponible" | "indisponible") {
   const listing = session.providerListing;
-  if (session.providerStatus !== "Confirmé" || !listing || listing.managementMode !== "provider") {
+  if (session.providerStatus !== "Confirmé" || !listing || ("vehicleModel" in listing)) {
     throw new Error("Seuls les prestataires approuvés peuvent modifier leur disponibilité.");
   }
-  await updateDoc(doc(db, providersCollection, listing.id), { providerAvailability });
+  const { response, payload } = await authenticatedPost("/api/provider-availability", { providerAvailability });
+  if (!response.ok || payload.providerAvailability !== providerAvailability) {
+    throw new Error(String(payload.error || "Votre disponibilité n'a pas pu être mise à jour."));
+  }
 }
 
 export async function saveUser(session: UserSession) {
