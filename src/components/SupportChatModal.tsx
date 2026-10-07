@@ -101,7 +101,7 @@ export default function SupportChatModal({ isOpen, onClose }: SupportChatModalPr
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -114,19 +114,19 @@ export default function SupportChatModal({ isOpen, onClose }: SupportChatModalPr
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 15 }}
         transition={{ type: "spring", damping: 25, stiffness: 350 }}
-        className="relative z-10 flex h-[min(680px,90dvh)] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className="relative z-10 flex h-[min(680px,calc(100dvh-1rem))] w-full max-w-xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:h-[min(680px,calc(100dvh-2rem))] sm:rounded-3xl"
         id="support-chat-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="support-chat-title"
       >
         <div className="flex shrink-0 items-center justify-between bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-4 text-white sm:px-6">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/15">
               <Bot className="h-5 w-5" />
             </div>
-            <div>
-              <h2 id="support-chat-title" className="font-display text-base font-bold sm:text-lg">Assistant Goying</h2>
+            <div className="min-w-0">
+              <h2 id="support-chat-title" className="break-words font-display text-base font-bold sm:text-lg">Assistant Goying</h2>
               <p className="text-[11px] text-blue-100">Réponses instantanées sur l&apos;application</p>
             </div>
           </div>
@@ -143,7 +143,7 @@ export default function SupportChatModal({ isOpen, onClose }: SupportChatModalPr
         <div className="flex-1 space-y-3 overflow-y-auto bg-slate-50 p-4 sm:p-5">
           {messages.map((message) => (
             <div key={message.id} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-[88%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed sm:text-sm ${
+              <div className={`max-w-[88%] break-words rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed sm:text-sm ${
                 message.role === "user"
                   ? "rounded-br-sm bg-blue-600 text-white"
                   : "rounded-bl-sm border border-slate-100 bg-white text-slate-700 shadow-sm"

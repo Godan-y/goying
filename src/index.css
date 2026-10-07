@@ -9,9 +9,16 @@
 html,
 body,
 #root {
+  min-height: 100%;
   width: 100%;
   max-width: 100%;
   overflow-x: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 img,
@@ -27,4 +34,18 @@ textarea,
 button {
   min-width: 0;
   max-width: 100%;
+}
+
+textarea {
+  resize: vertical;
+}
+
+#root :where(p, h1, h2, h3, h4, h5, h6, label, span, li, dd) {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 359px) {
+  html {
+    font-size: 15px;
+  }
 }

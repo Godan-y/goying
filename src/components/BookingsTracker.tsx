@@ -51,7 +51,7 @@ export default function BookingsTracker({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -67,27 +67,28 @@ export default function BookingsTracker({
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 15 }}
         transition={{ type: "spring", damping: 25, stiffness: 350 }}
-        className="relative z-10 w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className="relative z-10 flex max-h-[calc(100dvh-1rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-3xl"
         id="bookings-tracker-container"
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-orange-500" />
-            <h2 className="font-display text-lg font-bold text-slate-900">
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 sm:px-6 sm:py-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <Clock className="h-5 w-5 shrink-0 text-orange-500" />
+            <h2 className="min-w-0 break-words font-display text-base font-bold text-slate-900 sm:text-lg">
               Suivi de mes réservations
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+            aria-label="Fermer le suivi de mes réservations"
+            className="shrink-0 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-orange-600"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* List of bookings */}
-        <div className="max-h-[60vh] overflow-y-auto p-6 space-y-4" id="bookings-tracker-list">
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4 sm:p-6" id="bookings-tracker-list">
           {isLoading && bookings.length === 0 ? (
             <div aria-busy="true" className="space-y-3 py-5">
               <div className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-600">
@@ -100,7 +101,7 @@ export default function BookingsTracker({
             <div role="alert" className="py-8 text-center">
               <AlertCircle className="mx-auto h-9 w-9 text-red-600" />
               <p className="mt-3 text-sm font-semibold text-slate-800">Impossible de charger vos réservations</p>
-              <p className="mt-1 text-xs text-slate-500">{error}</p>
+              <p className="mt-1 break-words text-xs text-slate-500">{error}</p>
               <button type="button" onClick={onRetry} className="mt-4 inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800"><RefreshCw className="h-3.5 w-3.5" />Réessayer</button>
             </div>
           ) : bookings.length === 0 ? (
@@ -120,12 +121,12 @@ export default function BookingsTracker({
                 className="group relative overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all hover:border-slate-200 hover:bg-white"
               >
                 {/* Top strip */}
-                <div className="flex items-center justify-between mb-2">
-                  <span className="inline-block rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold text-blue-700 capitalize">
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2 pr-6">
+                  <span className="max-w-full break-words rounded-full bg-blue-50 px-2.5 py-0.5 text-[10px] font-bold text-blue-700 capitalize">
                     {book.serviceType}
                   </span>
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
+                    className={`inline-flex max-w-full items-center gap-1 break-words rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
                       book.status === "Confirmé"
                         ? "bg-emerald-50 text-emerald-700"
                         : "bg-amber-50 text-amber-700"
@@ -141,21 +142,21 @@ export default function BookingsTracker({
                 </div>
 
                 {/* Body */}
-                <h4 className="text-sm font-bold text-slate-900">{book.itemName}</h4>
-                <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+                <h4 className="break-words text-sm font-bold text-slate-900">{book.itemName}</h4>
+                <p className="mt-1 break-words text-xs leading-relaxed text-slate-500 line-clamp-2">
                   {book.details}
                 </p>
 
                 {/* Footer price & cancel action */}
-                <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                  <div>
+                <div className="mt-3 flex flex-col gap-2 border-t border-slate-100 pt-3 text-xs min-[360px]:flex-row min-[360px]:items-center min-[360px]:justify-between">
+                  <div className="min-w-0">
                     <span className="text-slate-400 font-medium">Planifié le :</span>
                     <span className="font-semibold text-slate-700 block mt-0.5">
                       📅 {book.date}
                     </span>
                   </div>
 
-                  <div className="text-right">
+                  <div className="min-w-0 break-words min-[360px]:text-right">
                     <span className="text-slate-400 font-medium">Tarif estimé :</span>
                     <span className="font-extrabold text-slate-900 block mt-0.5">
                       {book.costInfo}
@@ -190,10 +191,10 @@ export default function BookingsTracker({
                       <label className="mt-2 block text-xs font-medium text-slate-700">Commentaire <span className="font-normal text-slate-500">(facultatif)</span>
                         <textarea value={comment} onChange={(event) => setComment(event.target.value)} maxLength={1000} rows={3} className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs" />
                       </label>
-                      {reviewError && <p role="alert" className="mt-2 text-xs text-red-700">{reviewError}</p>}
-                      <div className="mt-2 flex gap-2">
-                        <button type="button" onClick={() => { setReviewBookingId(null); setRating(0); setComment(""); setReviewError(""); }} className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-white">Annuler</button>
-                        <button type="submit" disabled={rating === 0 || submittingReview} className="rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-60">{submittingReview ? "Enregistrement…" : "Envoyer mon avis"}</button>
+                      {reviewError && <p role="alert" className="mt-2 break-words text-xs text-red-700">{reviewError}</p>}
+                      <div className="mt-2 flex flex-col gap-2 min-[360px]:flex-row">
+                        <button type="button" onClick={() => { setReviewBookingId(null); setRating(0); setComment(""); setReviewError(""); }} className="w-full rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-white min-[360px]:w-auto">Annuler</button>
+                        <button type="submit" disabled={rating === 0 || submittingReview} className="w-full rounded-lg bg-orange-600 px-3 py-2 text-xs font-bold text-white disabled:cursor-not-allowed disabled:opacity-60 min-[360px]:w-auto">{submittingReview ? "Enregistrement…" : "Envoyer mon avis"}</button>
                       </div>
                     </form>
                   ) : (
@@ -217,10 +218,10 @@ export default function BookingsTracker({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-slate-100 px-6 py-4 flex justify-end bg-slate-50">
+        <div className="flex shrink-0 justify-end border-t border-slate-100 bg-slate-50 px-4 py-3 sm:px-6 sm:py-4">
           <button
             onClick={onClose}
-            className="rounded-full bg-slate-900 px-5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-colors"
+            className="w-full rounded-full bg-slate-900 px-5 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-800 min-[360px]:w-auto"
           >
             Fermer le panneau
           </button>

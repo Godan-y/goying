@@ -69,7 +69,7 @@ export default function ProfessionalProfileModal({
   if (!isOpen) return null;
   if (isRejected) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
         <div className="absolute inset-0 bg-slate-900/60" onClick={onClose} />
         <section className="relative z-10 w-full max-w-md rounded-3xl bg-white p-6 text-center shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="provider-rejected-title">
           <button type="button" onClick={onClose} className="absolute right-4 top-4 rounded-full p-2 text-slate-400 hover:bg-slate-100" aria-label="Fermer">
@@ -172,7 +172,7 @@ export default function ProfessionalProfileModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/60" onClick={onClose} />
-      <form onSubmit={save} className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl">
+      <form onSubmit={save} className="relative z-10 max-h-[calc(100dvh-1rem)] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-3xl sm:p-6">
         <button type="button" onClick={onClose} className="absolute right-4 top-4 rounded-full p-2 text-slate-400 hover:bg-slate-100">
           <X className="h-5 w-5" />
         </button>
@@ -189,7 +189,7 @@ export default function ProfessionalProfileModal({
         )}
         {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700">{error}</p>}
         {isApproved && hasAvailabilityControl && (
-          <button type="button" disabled={isUpdatingAvailability} onClick={() => void toggleAvailability()} className="absolute right-14 top-4 inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60">
+          <button type="button" disabled={isUpdatingAvailability} onClick={() => void toggleAvailability()} className="absolute right-14 top-3 inline-flex max-w-[calc(100%-5.5rem)] items-center justify-center gap-1.5 break-words rounded-xl border border-slate-200 bg-white px-2 py-2 text-[11px] font-bold text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 sm:top-4 sm:px-3 sm:text-xs">
             <Power className="h-3.5 w-3.5" />{isUpdatingAvailability ? "Mise à jour..." : providerAvailability === "disponible" ? "Je suis indisponible" : "Je suis disponible"}
           </button>
         )}
@@ -197,7 +197,7 @@ export default function ProfessionalProfileModal({
           <section className={`mt-4 flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${isAdminUnavailable ? "border-red-200 bg-red-50" : providerAvailability === "indisponible" ? "border-amber-200 bg-amber-50" : "border-emerald-100 bg-emerald-50"}`}>
             <div className="flex min-w-0 items-start gap-2">
               <CircleAlert className={`mt-0.5 h-5 w-5 shrink-0 ${isAdminUnavailable ? "text-red-600" : providerAvailability === "indisponible" ? "text-amber-600" : "text-emerald-600"}`} />
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-bold text-slate-900">{isAdminUnavailable ? "Indisponibilité définie par Goying" : providerAvailability === "indisponible" ? "Vous êtes actuellement indisponible" : "Vous êtes disponible"}</p>
                 <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{isAdminUnavailable ? "Votre profil n'est pas visible publiquement, mais vous conservez l'accès complet à vos informations et pouvez les modifier." : providerAvailability === "indisponible" ? "Votre profil reste visible publiquement, mais les clients ne peuvent pas prendre rendez-vous avec vous." : "Les clients peuvent actuellement prendre rendez-vous avec vous."}</p>
               </div>

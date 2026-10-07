@@ -155,14 +155,15 @@ export default function LoginModal({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
+          aria-label="Fermer la connexion"
+          className="absolute right-3 top-3 rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600 sm:right-4 sm:top-4"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Modal Title */}
         <div className="mb-6 text-center">
-          <h2 className="font-display text-2xl font-bold text-slate-900">
+          <h2 className="break-words font-display text-2xl font-bold text-slate-900">
             {loginMode === "prestataire"
               ? "Connexion prestataire"
               : isRegister
@@ -181,12 +182,12 @@ export default function LoginModal({
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4" id="login-form">
           {error && (
-            <div className="rounded-xl bg-red-50 p-3 text-xs font-medium text-red-600 border border-red-100">
+            <div className="break-words rounded-xl border border-red-100 bg-red-50 p-3 text-xs font-medium text-red-600">
               {error}
             </div>
           )}
           {passwordResetMessage && (
-            <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs font-medium text-emerald-700">
+            <div className="break-words rounded-xl border border-emerald-100 bg-emerald-50 p-3 text-xs font-medium text-emerald-700">
               {passwordResetMessage}
             </div>
           )}

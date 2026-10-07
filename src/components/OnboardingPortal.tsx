@@ -311,10 +311,10 @@ export default function OnboardingPortal({
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-3 py-0.5 text-xs font-semibold uppercase tracking-wider backdrop-blur-sm">
                   <ShieldCheck className="h-3.5 w-3.5" /> Dossier Réceptionné
                 </span>
-                <h2 className="mt-2 text-2xl sm:text-3xl font-bold font-display leading-tight">
+                <h2 className="mt-2 break-words text-2xl font-bold font-display leading-tight sm:text-3xl">
                   Votre dossier est en cours de traitement pour être validé
                 </h2>
-                <p className="mt-1 text-sm text-orange-50">
+                <p className="mt-1 break-words text-sm text-orange-50">
                   Candidat(e) : <strong>{fullFullName}</strong> • Spécialité : <strong className="capitalize">{selectedSpecialty}</strong>
                 </p>
               </div>
@@ -341,9 +341,9 @@ export default function OnboardingPortal({
                   
                   {/* Numéro Box avec Copier */}
                   <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-white p-3 border border-amber-300 shadow-sm">
-                    <div className="flex-1 min-w-[200px]">
+                    <div className="min-w-0 flex-1">
                       <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Numéro de transfert (Mobile Money)</p>
-                      <p className="text-xl font-bold font-mono text-slate-900 tracking-wider">
+                      <p className="break-all text-lg font-bold font-mono text-slate-900 tracking-normal sm:text-xl sm:tracking-wider">
                         +243 973199473
                       </p>
                       <p className="text-xs text-emerald-700 font-semibold mt-0.5">
@@ -353,7 +353,7 @@ export default function OnboardingPortal({
 
                     <button
                       onClick={handleCopyPhone}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white hover:bg-slate-800 transition-colors shadow-sm active:scale-95"
+                      className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 active:scale-95 sm:w-auto"
                     >
                       {copiedNumber ? (
                         <>

@@ -57,9 +57,9 @@ export default function PartnershipModal({ isOpen, onClose }: PartnershipModalPr
   const whatsappMessage = `Bonjour Goying, je vous contacte au sujet d'une proposition de partenariat.\n\nOrganisation : ${form.organizationName}\nType : ${form.entityType}\nContact : ${form.contactName}\nDomaine : ${form.collaborationArea}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={close} />
-      <section className="relative z-10 max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl sm:p-7" role="dialog" aria-modal="true" aria-labelledby="partnership-title">
+      <section className="relative z-10 max-h-[calc(100dvh-1rem)] w-full max-w-xl overflow-y-auto rounded-2xl bg-white p-4 shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-3xl sm:p-7" role="dialog" aria-modal="true" aria-labelledby="partnership-title">
         <button type="button" onClick={close} aria-label="Fermer" className="absolute right-4 top-4 rounded-full p-2 text-slate-500 hover:bg-slate-100">
           <X className="h-5 w-5" />
         </button>
@@ -67,7 +67,7 @@ export default function PartnershipModal({ isOpen, onClose }: PartnershipModalPr
         {submitted ? (
           <div className="py-8 text-center">
             <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-600" />
-            <h2 className="mt-4 text-xl font-bold text-slate-900">Proposition enregistrée</h2>
+            <h2 className="mt-4 break-words text-xl font-bold text-slate-900">Proposition enregistrée</h2>
             <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-slate-600">
               Merci pour votre intérêt. Votre proposition est enregistrée de manière sécurisée. Vous pouvez maintenant nous contacter sur WhatsApp pour un échange plus rapide.
             </p>
@@ -88,10 +88,10 @@ export default function PartnershipModal({ isOpen, onClose }: PartnershipModalPr
           <form onSubmit={submit} className="space-y-4">
             <div className="pr-8">
               <Building2 className="mb-2 h-7 w-7 text-blue-600" />
-              <h2 id="partnership-title" className="text-xl font-bold text-slate-900">Devenir partenaire de Goying</h2>
+              <h2 id="partnership-title" className="break-words text-xl font-bold text-slate-900">Devenir partenaire de Goying</h2>
               <p className="mt-1 text-sm leading-relaxed text-slate-500">Construisons ensemble des solutions utiles, fiables et adaptées aux besoins locaux.</p>
             </div>
-            {error && <p role="alert" className="rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
+            {error && <p role="alert" className="break-words rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-xs font-semibold text-slate-600 sm:col-span-2">Nom de l'organisation / entreprise *
                 <input required value={form.organizationName} placeholder="Ex : Agence d'Assainissement / Entreprise X" onChange={(event) => setForm({ ...form, organizationName: event.target.value })} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm" />

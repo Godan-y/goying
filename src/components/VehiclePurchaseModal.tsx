@@ -79,7 +79,7 @@ export default function VehiclePurchaseModal({ sale, session, onClose, onRequire
   return (
     <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto p-2 sm:items-center sm:p-4">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={close} />
-      <section className="relative z-10 my-0 w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl sm:my-auto sm:rounded-3xl" role="dialog" aria-modal="true" aria-labelledby="vehicle-purchase-title">
+      <section className="relative z-10 my-0 flex max-h-[calc(100dvh-1rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:my-auto sm:max-h-[calc(100dvh-2rem)] sm:rounded-3xl" role="dialog" aria-modal="true" aria-labelledby="vehicle-purchase-title">
         <button type="button" aria-label="Fermer" onClick={close} className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-slate-500 shadow-sm hover:bg-slate-100"><X className="h-5 w-5" /></button>
         {isSubmitted ? (
           <div className="px-5 py-12 text-center sm:px-8">
@@ -90,7 +90,7 @@ export default function VehiclePurchaseModal({ sale, session, onClose, onRequire
             <button type="button" onClick={close} className="mt-6 rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white hover:bg-slate-800">Fermer</button>
           </div>
         ) : (
-          <form onSubmit={submit} className="max-h-[calc(100dvh-1rem)] overflow-y-auto p-4 sm:max-h-[calc(100dvh-2rem)] sm:p-7">
+          <form onSubmit={submit} className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-7">
             <div className="pr-10">
               <h2 id="vehicle-purchase-title" className="text-xl font-bold text-slate-900">Confirmer l'achat</h2>
               <p className="mt-1 text-sm text-slate-500">Votre demande sera prise en charge par l'équipe Goying.</p>
@@ -107,12 +107,12 @@ export default function VehiclePurchaseModal({ sale, session, onClose, onRequire
                     </div>
                   </div>
                   <div className="shrink-0 sm:text-right">
-                    <p className="text-2xl font-extrabold text-slate-900">{sale.priceUsd.toLocaleString("en-US")} $</p>
+                    <p className="break-words text-xl font-extrabold text-slate-900 sm:text-2xl">{sale.priceUsd.toLocaleString("en-US")} $</p>
                     {sale.priceNegotiable && <span className="mt-1 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">Prix négociable</span>}
                   </div>
                 </div>
                 <h4 className="mt-4 text-[11px] font-bold uppercase tracking-wider text-slate-400">Caractéristiques techniques</h4>
-                <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <div className="mt-3 grid grid-cols-1 gap-2 min-[360px]:grid-cols-2 sm:grid-cols-4">
                   <VehicleDetail label="Kilométrage" value={`${sale.mileage.toLocaleString("fr-FR")} km`} icon={<Gauge className="h-4 w-4" />} />
                   <VehicleDetail label="Carburant" value={sale.fuel} icon={<Fuel className="h-4 w-4" />} />
                   <VehicleDetail label="Transmission" value={sale.transmission} icon={<Sliders className="h-4 w-4" />} />
@@ -130,7 +130,7 @@ export default function VehiclePurchaseModal({ sale, session, onClose, onRequire
               <p className="mt-2 text-sm leading-relaxed text-amber-800">Aucun paiement en ligne n'est demandé. Le paiement sera effectué sur place après vérification du véhicule et confirmation de la transaction.</p>
             </div>
 
-            {error && <p role="alert" className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
+            {error && <p role="alert" className="mt-4 break-words rounded-xl border border-red-100 bg-red-50 p-3 text-xs text-red-700">{error}</p>}
             <fieldset className="mt-5 space-y-3">
               <legend className="text-sm font-bold text-slate-900">Vos informations</legend>
               <label className="block text-xs font-semibold text-slate-600">Nom complet *

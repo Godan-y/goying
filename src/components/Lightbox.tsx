@@ -129,7 +129,7 @@ export function Lightbox({ images, initialIndex = 0, isOpen, onClose, alt = "Ima
         <div className="absolute left-4 top-4 rounded-full bg-black/40 px-3 py-1.5 text-xs font-semibold text-white" aria-live="polite">
           {index + 1} / {validImages.length}
         </div>
-        <div className="absolute right-3 top-3 z-10 flex gap-2 sm:right-5 sm:top-5">
+        <div className="absolute right-2 top-2 z-10 flex max-w-[calc(100%-1rem)] flex-wrap justify-end gap-1.5 sm:right-5 sm:top-5 sm:gap-2">
           <Control label="Zoom arrière" onClick={() => updateZoom(zoom - 0.5)} disabled={zoom <= MIN_ZOOM}><ZoomOut /></Control>
           <Control label="Réinitialiser le zoom" onClick={resetTransform} disabled={zoom === MIN_ZOOM && position.x === 0 && position.y === 0}><RotateCcw /></Control>
           <Control label="Zoom avant" onClick={() => updateZoom(zoom + 0.5)} disabled={zoom >= MAX_ZOOM}><ZoomIn /></Control>
@@ -142,7 +142,7 @@ export function Lightbox({ images, initialIndex = 0, isOpen, onClose, alt = "Ima
           </>
         )}
         <div
-          className={`flex h-full w-full items-center justify-center overflow-hidden ${zoom > MIN_ZOOM ? "cursor-grab active:cursor-grabbing" : ""}`}
+          className={`flex h-full w-full items-center justify-center overflow-hidden px-10 pt-12 pb-12 sm:px-14 sm:pt-14 sm:pb-14 ${zoom > MIN_ZOOM ? "cursor-grab active:cursor-grabbing" : ""}`}
           onClick={(event) => event.stopPropagation()}
           onWheel={(event) => {
             event.preventDefault();

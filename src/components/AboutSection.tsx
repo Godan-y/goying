@@ -26,7 +26,7 @@ export default function AboutSection({ isOpen, onClose }: AboutSectionProps) {
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 15 }}
         transition={{ type: "spring", damping: 25, stiffness: 350 }}
-        className="relative z-10 w-full max-w-lg max-h-[90vh] sm:max-h-[85vh] flex flex-col overflow-hidden rounded-3xl bg-white p-5 sm:p-6 md:p-8 shadow-2xl"
+        className="relative z-10 flex max-h-[calc(100dvh-1rem)] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white p-4 shadow-2xl sm:max-h-[calc(100dvh-2rem)] sm:rounded-3xl sm:p-6 md:p-8"
         id="about-modal-container"
       >
         {/* Close Button */}
@@ -62,7 +62,7 @@ export default function AboutSection({ isOpen, onClose }: AboutSectionProps) {
           </p>
 
           {/* Core Values Grid */}
-          <div className="grid grid-cols-2 gap-3 pt-1">
+          <div className="grid grid-cols-1 gap-3 pt-1 min-[360px]:grid-cols-2">
             <div className="flex items-start gap-2 rounded-xl bg-blue-50/50 p-2.5 sm:p-3 border border-blue-50">
               <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 shrink-0 mt-0.5" />
               <div>

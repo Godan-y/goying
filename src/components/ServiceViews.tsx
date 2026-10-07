@@ -1096,7 +1096,7 @@ export function CarRentalView({
                     </div>
                   </div>
                   <h4 className="mt-5 text-xs font-bold uppercase tracking-wider text-slate-400">Caractéristiques techniques</h4>
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4"><Detail label="Kilométrage" value={`${selectedVehicleSale.mileage.toLocaleString("fr-FR")} km`} /><Detail label="Carburant" value={selectedVehicleSale.fuel} /><Detail label="Transmission" value={selectedVehicleSale.transmission} /><Detail label="Localisation" value={[selectedVehicleSale.city, selectedVehicleSale.commune].filter(Boolean).join(", ") || "À confirmer"} /></div>
+                  <div className="mt-3 grid grid-cols-1 gap-2 text-xs min-[360px]:grid-cols-2 sm:grid-cols-4"><Detail label="Kilométrage" value={`${selectedVehicleSale.mileage.toLocaleString("fr-FR")} km`} /><Detail label="Carburant" value={selectedVehicleSale.fuel} /><Detail label="Transmission" value={selectedVehicleSale.transmission} /><Detail label="Localisation" value={[selectedVehicleSale.city, selectedVehicleSale.commune].filter(Boolean).join(", ") || "À confirmer"} /></div>
                   {selectedVehicleSale.description && <><h4 className="mt-6 border-t border-slate-100 pt-5 text-xs font-bold uppercase tracking-wider text-slate-400">Description du véhicule</h4><p className="mt-3 break-words rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm leading-relaxed text-slate-600">{selectedVehicleSale.description}</p></>}
                   <div className="mt-6 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 items-center gap-2 text-xs text-slate-500"><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600"><MessageCircle className="h-4 w-4" /></span><span className="min-w-0"><strong className="block text-slate-700">Paiement sur place</strong>Aucun paiement en ligne n'est demandé.</span></div>
@@ -1605,7 +1605,7 @@ export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin,
       </div>
 
       {/* Tabs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 border-b border-slate-100 pb-4">
+      <div className="grid grid-cols-1 gap-2 border-b border-slate-100 pb-4 min-[360px]:grid-cols-2 sm:grid-cols-4">
         {specsList.map((spec) => {
           const IconComp = spec.icon;
           const isActive = activeSpec === spec.id;
