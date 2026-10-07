@@ -73,6 +73,18 @@ function record(value: unknown): FirestoreRecord {
   return value as FirestoreRecord;
 }
 
+function s3ProfilePhotoUrl(value: unknown): string {
+  if (typeof value !== "string" || !value.trim()) return "";
+  try {
+    const url = new URL(value.trim());
+    const isS3Host = url.hostname.endsWith(".amazonaws.com") &&
+      (url.hostname.includes(".s3.") || url.hostname.startsWith("s3."));
+    return url.protocol === "https:" && isS3Host ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
 export async function logoutCurrentUser() {
   await signOut(auth);
 }
@@ -265,7 +277,7 @@ export async function getChauffeurs(): Promise<Chauffeur[]> {
         ...data,
         id: snapshotDocument.id,
         name: String(data.name || [data.prenom, data.nom, data.postNom].filter(Boolean).join(" ") || "Chauffeur"),
-        avatarUrl: String(data.avatarUrl || data.photoUrl || ""),
+        avatarUrl: s3ProfilePhotoUrl(data.photo_profil),
         bio: String(data.bio || data.description || ""),
         pricePerMonth: Number(data.pricePerMonth ?? data.tarifMensuel ?? data.priceRate ?? data.pricePerKm ?? 0),
         currency: String(data.currency || data.devise || "$"),
@@ -328,7 +340,9 @@ export async function getProviders(): Promise<SecondaryProvider[]> {
         ...data,
         id: String(data.id),
         specialty,
-        avatarUrl: String(data.avatarUrl || data.photoUrl || ""),
+        avatarUrl: specialty === "ménagère"
+          ? s3ProfilePhotoUrl(data.photo_profil)
+          : String(data.avatarUrl || data.photoUrl || ""),
         skills,
         experienceYears: Number(data.experienceYears ?? data.anneesExperience ?? 0),
         priceRate: String(data.priceRate || "").replace(/€/g, "$")
