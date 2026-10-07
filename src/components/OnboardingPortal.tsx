@@ -206,6 +206,7 @@ export default function OnboardingPortal({
         serviceType: driverServiceType,
         transmission: driverTransmission,
         experienceYears: experienceYears,
+        skills: [],
         country,
         city,
         commune,

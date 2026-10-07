@@ -10,6 +10,7 @@ export interface Property {
   title: string;
   type: "Achat" | "Location";
   category: "Appartement" | "Maison" | "Bureau" | "Villa";
+  type_maison?: string;
   price: number;
   currency: string;
   address: string;
@@ -84,6 +85,7 @@ export interface Chauffeur {
   serviceType: "Chauffeur privé" | "Taxi" | "Les deux";
   transmission: "Automatique" | "Manuelle" | "Les deux";
   experienceYears: number;
+  skills: string[];
   country: string;
   city: string;
   commune: string;

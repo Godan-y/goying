@@ -124,6 +124,7 @@ export async function getProperties(): Promise<Property[]> {
         title: String(data.titre || "Maison à louer"),
         type: data.type === "a_vendre" || data.statut === "a_vendre" ? "Achat" : "Location",
         category: "Maison",
+        type_maison: typeof data.type_maison === "string" ? data.type_maison : "",
         price: Number(data.prix) || 0,
         currency: String(data.devise || "$"),
         address: String(data.commune || ""),
@@ -285,6 +286,12 @@ export async function getChauffeurs(): Promise<Chauffeur[]> {
         serviceType: String(data.serviceType || data.typeService || "Chauffeur privé"),
         transmission: transmission === "Automatique et manuelle" ? "Les deux" : transmission,
         vehicleModel: String(data.vehicleModel || data.modeleVehicule || ""),
+        experienceYears: Number(data.anneesExperience ?? 0),
+        skills: Array.isArray(data.skills)
+          ? data.skills.filter((skill): skill is string => typeof skill === "string")
+            .map((skill) => skill.trim())
+            .filter(Boolean)
+          : [],
         country: String(data.country || data.pays || "Non renseigné"),
         city: String(data.city || data.ville || (Array.isArray(data.zones) ? data.zones[0] : "") || "Non renseignée"),
         commune: String(data.commune || "Non renseignée"),

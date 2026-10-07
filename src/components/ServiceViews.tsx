@@ -146,10 +146,13 @@ export function RealEstateView({ properties, onBookProperty, onRequireLogin, ses
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number; alt: string } | null>(null);
 
   const categories = ["Tous", "Villa", "Appartement", "Bureau", "Maison", "Terrain", "Studio"];
+  const normalizedHouseFilter = filterCategory.trim().toLowerCase();
 
   const filteredProperties = properties.filter((p) => {
     const matchesType = filterType === "Tous" || p.type === filterType;
-    const matchesCategory = filterCategory === "Tous" || p.category === filterCategory;
+    const normalizedHouseType = p.type_maison?.trim().toLowerCase() || "";
+    const matchesCategory = ["tous", "all"].includes(normalizedHouseFilter) ||
+      normalizedHouseType === normalizedHouseFilter;
     return matchesType && matchesCategory;
   });
 
@@ -1310,7 +1313,8 @@ export function ChauffeurView({ chauffeurs, onAddBooking, onRequireLogin, sessio
               <ExpandableDescription description={ch.bio} className="pt-1" />
 
               <p className="break-words text-[11px] font-semibold text-slate-500 pt-1">
-                📍 {ch.country} · {ch.city} · {ch.commune}
+                <MapPin className="mr-1 inline h-3.5 w-3.5 shrink-0 text-indigo-500" aria-hidden="true" />
+                {ch.country} · {ch.city} · {ch.commune}
               </p>
 
               {/* Zones */}
@@ -1318,12 +1322,21 @@ export function ChauffeurView({ chauffeurs, onAddBooking, onRequireLogin, sessio
                 {ch.zones.map((zone, i) => (
                   <span
                     key={i}
-                    className="rounded-md bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-500 border border-slate-100"
+                    className="flex items-center gap-1 rounded-md bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-500 border border-slate-100"
                   >
-                    📍 {zone}
+                    <MapPin className="h-3 w-3 shrink-0 text-indigo-500" aria-hidden="true" /> {zone}
                   </span>
                 ))}
               </div>
+              {ch.skills && ch.skills.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-2">
+                  {ch.skills.map((skill, index) => (
+                    <span key={`${skill}-${index}`} className="rounded-md border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-700">
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Price Rate & CTA */}
@@ -1386,7 +1399,25 @@ export function ChauffeurView({ chauffeurs, onAddBooking, onRequireLogin, sessio
                   <p className="text-[10px] text-slate-500">
                     {selectedChauffeur.serviceType} · {selectedChauffeur.transmission}
                   </p>
+                  <p className="text-[10px] font-semibold text-slate-500">
+                    {selectedChauffeur.experienceYears} ans d'expérience
+                  </p>
                 </div>
+              </div>
+              <div className="mb-4 rounded-xl bg-slate-50 p-3 text-xs text-slate-600">
+                <p className="flex items-center gap-1 font-medium">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-indigo-500" aria-hidden="true" />
+                  {selectedChauffeur.country} · {selectedChauffeur.city} · {selectedChauffeur.commune}
+                </p>
+                {selectedChauffeur.skills && selectedChauffeur.skills.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {selectedChauffeur.skills.map((skill, index) => (
+                      <span key={`${skill}-${index}`} className="rounded-md border border-indigo-100 bg-white px-2 py-0.5 text-[10px] font-medium text-indigo-700">
+                        {skill}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {rideSuccess ? (
@@ -1685,7 +1716,8 @@ export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin,
                   {prov.experienceYears} ans d'expérience
                 </p>
                 <p className="break-words text-[11px] font-semibold leading-relaxed text-slate-500">
-                  📍 {prov.country} · {prov.city} · {prov.commune}
+                  <MapPin className="mr-1 inline h-3.5 w-3.5 shrink-0 text-orange-500" aria-hidden="true" />
+                  {prov.country} · {prov.city} · {prov.commune}
                 </p>
                 <div className="flex items-center gap-1 text-xs text-slate-500 font-medium pt-0.5">
                   <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 shrink-0" />
