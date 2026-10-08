@@ -18,6 +18,7 @@ import {
   onSnapshot,
   query,
   setDoc,
+  Timestamp,
   updateDoc,
   where,
   writeBatch,
@@ -85,6 +86,16 @@ function s3ProfilePhotoUrl(value: unknown): string {
   }
 }
 
+function publicationDate(value: unknown): string | undefined {
+  if (typeof value === "string" && !Number.isNaN(Date.parse(value))) return value;
+  if (value instanceof Timestamp) return value.toDate().toISOString();
+  if (typeof value === "object" && value !== null && "seconds" in value) {
+    const seconds = (value as { seconds?: unknown }).seconds;
+    if (typeof seconds === "number") return new Date(seconds * 1000).toISOString();
+  }
+  return undefined;
+}
+
 export async function logoutCurrentUser() {
   await signOut(auth);
 }
@@ -142,6 +153,7 @@ export async function getProperties(): Promise<Property[]> {
         contactName: String(data.contactName || "Propriétaire"),
         phone: String(data.telephone || ""),
         isAvailable,
+        createdAt: publicationDate(data.createdAt ?? data.created_at),
       });
     });
     return properties;
@@ -177,6 +189,7 @@ function toVehicle(data: FirestoreRecord, id: string): Vehicle {
         : typeof data.adresse === "string" ? data.adresse : undefined),
     city: city || undefined,
     commune: commune || undefined,
+    createdAt: publicationDate(data.createdAt ?? data.created_at),
   } as Vehicle;
 }
 
@@ -240,7 +253,7 @@ export async function getVehicleSales(): Promise<VehicleSale[]> {
         imageUrl: String(data.imageUrl || imageUrls[0] || ""),
         imageUrls: imageUrls.length > 0 ? imageUrls : undefined,
         status: "Disponible",
-        createdAt: typeof data.createdAt === "string" ? data.createdAt : undefined,
+        createdAt: publicationDate(data.createdAt ?? data.created_at),
       };
       return sale;
     });

@@ -27,6 +27,7 @@ export interface Property {
   phone?: string;
   informationsComplementaires?: string;
   isAvailable?: boolean;
+  createdAt?: string;
 }
 
 export interface Vehicle {
@@ -49,6 +50,7 @@ export interface Vehicle {
   reviewsCount: number;
   features: string[];
   isAvailable: boolean;
+  createdAt?: string;
 }
 
 export interface VehicleSale {

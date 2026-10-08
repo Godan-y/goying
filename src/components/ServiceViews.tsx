@@ -122,6 +122,17 @@ function complementaryInformationItems(value?: string): string[] {
     : [value.trim()];
 }
 
+function publicationLabel(value?: string): string | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
 /* ========================================== */
 /*           1. REAL ESTATE VIEW              */
 /* ========================================== */
@@ -306,6 +317,12 @@ export function RealEstateView({ properties, onBookProperty, onRequireLogin, ses
                   <MapPin className="h-3.5 w-3.5 text-slate-300 shrink-0" />
                   <span>{p.address}</span>
                 </div>
+                {publicationLabel(p.createdAt) && (
+                  <p className="mt-2 flex items-center gap-1 text-xs font-medium text-slate-400">
+                    <Calendar className="h-3.5 w-3.5 shrink-0" />
+                    Publié le {publicationLabel(p.createdAt)}
+                  </p>
+                )}
 
                 <h3 className="mt-2 text-base font-bold text-slate-900 group-hover:text-blue-600 transition-colors line-clamp-1">
                   {p.title}
@@ -793,6 +810,12 @@ export function CarRentalView({
               </div>
 
               {v.location && <p className="mt-3 flex items-center gap-1 text-xs font-semibold text-slate-500"><MapPin className="h-3.5 w-3.5 shrink-0 text-rose-500" />{v.location}</p>}
+              {publicationLabel(v.createdAt) && (
+                <p className="mt-2 flex items-center gap-1 text-xs font-medium text-slate-400">
+                  <Calendar className="h-3.5 w-3.5 shrink-0" />
+                  Publié le {publicationLabel(v.createdAt)}
+                </p>
+              )}
 
               {/* Footer pricing */}
               <div className="mt-auto pt-4 flex items-center justify-between">
@@ -907,6 +930,12 @@ export function CarRentalView({
                     <span className="flex min-w-0 items-center gap-1 truncate"><Sliders className="h-3.5 w-3.5 shrink-0 text-slate-400" />{sale.transmission}</span>
                   </div>
                   <p className="mt-3 flex items-center gap-1 truncate text-xs font-semibold text-slate-500"><MapPin className="h-3.5 w-3.5 shrink-0 text-rose-500" />{[sale.city, sale.commune].filter(Boolean).join(", ") || "Localisation à confirmer"}</p>
+                  {publicationLabel(sale.createdAt) && (
+                    <p className="mt-2 flex items-center gap-1 text-xs font-medium text-slate-400">
+                      <Calendar className="h-3.5 w-3.5 shrink-0" />
+                      Publié le {publicationLabel(sale.createdAt)}
+                    </p>
+                  )}
                   <div className="mt-auto flex items-end justify-between gap-3 pt-4">
                     <div>
                       <p className="text-2xl font-extrabold text-slate-900">{sale.priceUsd.toLocaleString("en-US")} $</p>
