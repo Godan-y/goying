@@ -1,6 +1,6 @@
 import { Clock, X, Trash2, Calendar, CheckCircle2, Star, AlertCircle, LoaderCircle, RefreshCw } from "lucide-react";
 import { Booking } from "../types";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { motion } from "motion/react";
 
 interface BookingsTrackerProps {
@@ -10,7 +10,7 @@ interface BookingsTrackerProps {
   error: string | null;
   onClose: () => void;
   onRetry: () => void;
-  onCancelBooking: (id: string) => void;
+  onCancelBooking: (id: string) => Promise<void>;
   onAcknowledgeBooking: (id: string) => void;
   onSubmitReview: (booking: Booking, rating: number, comment: string) => Promise<void>;
 }
@@ -31,6 +31,17 @@ export default function BookingsTracker({
   const [comment, setComment] = useState("");
   const [reviewError, setReviewError] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteSuccess, setDeleteSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!deleteSuccess) return;
+    const timer = window.setTimeout(() => setDeleteSuccess(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [deleteSuccess]);
+
   if (!isOpen) return null;
 
   const submitReview = async (event: FormEvent, booking: Booking) => {
@@ -47,6 +58,21 @@ export default function BookingsTracker({
       setReviewError(error instanceof Error ? error.message : "Votre avis n'a pas pu être enregistré.");
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!bookingToDelete || isDeleting) return;
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      await onCancelBooking(bookingToDelete.id);
+      setBookingToDelete(null);
+      setDeleteSuccess(true);
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : "La réservation n'a pas pu être supprimée. Veuillez réessayer.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -89,6 +115,11 @@ export default function BookingsTracker({
 
         {/* List of bookings */}
         <div className="min-h-0 flex-1 overflow-y-auto p-4 space-y-4 sm:p-6" id="bookings-tracker-list">
+          {deleteSuccess && (
+            <p role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">
+              Réservation supprimée avec succès.
+            </p>
+          )}
           {isLoading && bookings.length === 0 ? (
             <div aria-busy="true" className="space-y-3 py-5">
               <div className="flex items-center justify-center gap-2 text-sm font-semibold text-slate-600">
@@ -204,11 +235,12 @@ export default function BookingsTracker({
                   )
                 )}
 
-                {/* Cancel Hover Button */}
                 <button
-                  onClick={() => onCancelBooking(book.id)}
-                  title="Annuler cette réservation"
-                  className="absolute top-2 right-2 rounded-lg p-1 text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                  type="button"
+                  onClick={() => { setBookingToDelete(book); setDeleteError(""); }}
+                  title="Supprimer cette réservation"
+                  aria-label={`Supprimer la réservation ${book.itemName}`}
+                  className="absolute right-2 top-2 z-10 flex h-11 w-11 touch-manipulation items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:bg-red-50 focus-visible:text-red-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-600 active:bg-red-100"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -227,6 +259,25 @@ export default function BookingsTracker({
           </button>
         </div>
       </motion.div>
+
+      {bookingToDelete && (
+        <div className="fixed inset-0 z-20 flex items-center justify-center p-4" role="presentation">
+          <div className="absolute inset-0 bg-slate-950/40" />
+          <div role="alertdialog" aria-modal="true" aria-labelledby="delete-booking-title" className="relative w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+            <h3 id="delete-booking-title" className="text-base font-bold text-slate-900">Supprimer cette réservation ?</h3>
+            <p className="mt-2 break-words text-sm leading-relaxed text-slate-600">Voulez-vous vraiment supprimer cette réservation ?</p>
+            {deleteError && <p role="alert" className="mt-3 break-words rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{deleteError}</p>}
+            <div className="mt-5 flex flex-col-reverse gap-2 min-[360px]:flex-row min-[360px]:justify-end">
+              <button type="button" disabled={isDeleting} onClick={() => { setBookingToDelete(null); setDeleteError(""); }} className="min-h-11 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 disabled:opacity-60">
+                Annuler
+              </button>
+              <button type="button" disabled={isDeleting} onClick={() => void confirmDelete()} className="min-h-11 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-60">
+                {isDeleting ? "Suppression…" : "Supprimer"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

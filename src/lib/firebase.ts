@@ -590,6 +590,7 @@ export async function cancelBooking(bookingId: string) {
     await deleteDoc(bookingRef);
   } catch (error) {
     console.error("Error cancelling booking in Firestore:", error);
+    throw error;
   }
 }
 

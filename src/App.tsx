@@ -105,6 +105,7 @@ export default function App() {
   const [isProfessionalProfileOpen, setIsProfessionalProfileOpen] = useState(false);
   const [commissionerAlert, setCommissionerAlert] = useState(false);
   const [bookingToast, setBookingToast] = useState<string | null>(null);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isPropertySubmissionOpen, setIsPropertySubmissionOpen] = useState(false);
@@ -243,13 +244,34 @@ export default function App() {
   // Handle Cancellation
   const handleCancelBooking = async (id: string) => {
     const cancelledBooking = bookings.find((booking) => booking.id === id);
-    setBookings((prev) => prev.filter((b) => b.id !== id));
     await firebaseCancelBooking(id);
+    setBookings((prev) => prev.filter((b) => b.id !== id));
     if (cancelledBooking?.providerId && cancelledBooking.providerCollection) {
       const updateProvider = cancelledBooking.providerCollection === "chauffeurs"
         ? (provider: Chauffeur) => provider.id === cancelledBooking.providerId ? { ...provider, status: "disponible" as const } : provider
         : undefined;
       if (updateProvider) setChauffeurs((prev) => prev.map(updateProvider));
+    }
+  };
+
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
+    setIsLoggingOut(true);
+    setBookingToast("Déconnexion en cours…");
+    try {
+      await logoutCurrentUser();
+      setBookings([]);
+      setSession({ isLoggedIn: false, email: "", fullName: "", role: "client" });
+      setActiveView("home");
+      setIsBookingsOpen(false);
+      setIsLoginOpen(true);
+      window.setTimeout(() => setBookingToast(null), 2000);
+    } catch (error) {
+      console.error("Firebase sign-out failed:", error);
+      setBookingToast("Impossible de se déconnecter. Veuillez réessayer.");
+      window.setTimeout(() => setBookingToast(null), 4000);
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -358,12 +380,8 @@ export default function App() {
         bookings={bookings}
         onNavigateHome={() => setActiveView("home")}
         onOpenLogin={() => setIsLoginOpen(true)}
-        onLogout={() => {
-          void logoutCurrentUser().catch((error) => console.error("Firebase sign-out failed:", error));
-          setBookings([]);
-          setSession({ isLoggedIn: false, email: "", fullName: "", role: "client" });
-          setActiveView("home");
-        }}
+        onLogout={handleLogout}
+        isLoggingOut={isLoggingOut}
         onOpenBookings={() => setIsBookingsOpen(true)}
         onOpenOnboarding={() => setActiveView("onboarding-pro")}
         onOpenProfile={() => setIsProfessionalProfileOpen(true)}

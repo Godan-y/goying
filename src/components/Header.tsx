@@ -9,7 +9,8 @@ interface HeaderProps {
   bookings: Booking[];
   onNavigateHome: () => void;
   onOpenLogin: () => void;
-  onLogout: () => void;
+  onLogout: () => Promise<void>;
+  isLoggingOut: boolean;
   onOpenBookings: () => void;
   onOpenOnboarding: () => void;
   onOpenProfile: () => void;
@@ -22,6 +23,7 @@ export default function Header({
   onNavigateHome,
   onOpenLogin,
   onLogout,
+  isLoggingOut,
   onOpenBookings,
   onOpenOnboarding,
   onOpenProfile,
@@ -105,9 +107,11 @@ export default function Header({
                 )}
                 <button
                   id="nav-btn-logout"
-                  onClick={onLogout}
+                  type="button"
+                  disabled={isLoggingOut}
+                  onClick={() => void onLogout()}
                   title="Se déconnecter"
-                  className="rounded-full p-2 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                  className="flex h-11 w-11 touch-manipulation items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <LogOut className="h-4 w-4" />
                 </button>
@@ -216,14 +220,13 @@ export default function Header({
                   )}
 
                   <button
-                    onClick={() => {
-                      onLogout();
-                      setIsMenuOpen(false);
-                    }}
-                    className="flex items-center gap-2 w-full px-4 py-3 text-sm font-semibold text-red-600 rounded-xl hover:bg-red-50 transition-colors text-left"
+                    type="button"
+                    disabled={isLoggingOut}
+                    onClick={() => void onLogout().then(() => setIsMenuOpen(false))}
+                    className="flex min-h-11 w-full touch-manipulation items-center gap-2 rounded-xl px-4 py-3 text-left text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <LogOut className="h-4 w-4" />
-                    Se déconnecter
+                    {isLoggingOut ? "Déconnexion…" : "Se déconnecter"}
                   </button>
                 </div>
               ) : (
