@@ -494,8 +494,25 @@ async function authenticatedDelete(path: string) {
     method: "DELETE",
     headers: { Authorization: ["Bear", "er "].join("") + token },
   });
-  const payload = await response.json() as FirestoreRecord;
+  const contentType = response.headers.get("content-type") || "";
+  const responseText = await response.text();
+  let payload: FirestoreRecord = {};
+  let hasValidJson = false;
+  if (contentType.includes("application/json") && responseText) {
+    try {
+      payload = JSON.parse(responseText) as FirestoreRecord;
+      hasValidJson = true;
+    } catch (error) {
+      console.error("Invalid JSON response from booking cancellation API:", error);
+    }
+  }
+  if (!hasValidJson) {
+    throw new Error("Le service de suppression est momentanément indisponible. Veuillez réessayer plus tard.");
+  }
   if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error("Le service de suppression est momentanément indisponible. Veuillez réessayer plus tard.");
+    }
     throw new Error(String(payload.detail || payload.error || "La réservation n'a pas pu être supprimée."));
   }
   return payload;
