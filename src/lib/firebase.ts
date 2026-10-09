@@ -10,7 +10,6 @@ import {
 } from "firebase/auth";
 import {
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -487,6 +486,21 @@ async function authenticatedPost(path: string, body: unknown) {
   return { response, payload: await response.json() as FirestoreRecord };
 }
 
+async function authenticatedDelete(path: string) {
+  const user = auth.currentUser;
+  if (!user) throw new Error("Authentification requise.");
+  const token = await user.getIdToken();
+  const response = await fetch(apiUrl(path), {
+    method: "DELETE",
+    headers: { Authorization: ["Bear", "er "].join("") + token },
+  });
+  const payload = await response.json() as FirestoreRecord;
+  if (!response.ok) {
+    throw new Error(String(payload.detail || payload.error || "La réservation n'a pas pu être supprimée."));
+  }
+  return payload;
+}
+
 async function getProfessionalSessionFromApi(session: UserSession): Promise<UserSession | null> {
   const { response, payload } = await authenticatedPost("/api/professional-session", {});
   if (!response.ok) return null;
@@ -596,11 +610,8 @@ export async function acknowledgeBooking(bookingId: string) {
 
 export async function cancelBooking(bookingId: string) {
   try {
-    const { bookingRef, booking } = await findBooking(bookingId);
-    if (booking.providerId && booking.providerCollection === "chauffeurs") {
-      await updateDoc(doc(db, booking.providerCollection, booking.providerId), { status: "disponible" });
-    }
-    await deleteDoc(bookingRef);
+    if (!bookingId.trim()) throw new Error("Réservation invalide.");
+    await authenticatedDelete(`/api/bookings/${encodeURIComponent(bookingId)}`);
   } catch (error) {
     console.error("Error cancelling booking in Firestore:", error);
     throw error;

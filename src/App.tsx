@@ -243,15 +243,8 @@ export default function App() {
 
   // Handle Cancellation
   const handleCancelBooking = async (id: string) => {
-    const cancelledBooking = bookings.find((booking) => booking.id === id);
     await firebaseCancelBooking(id);
     setBookings((prev) => prev.filter((b) => b.id !== id));
-    if (cancelledBooking?.providerId && cancelledBooking.providerCollection) {
-      const updateProvider = cancelledBooking.providerCollection === "chauffeurs"
-        ? (provider: Chauffeur) => provider.id === cancelledBooking.providerId ? { ...provider, status: "disponible" as const } : provider
-        : undefined;
-      if (updateProvider) setChauffeurs((prev) => prev.map(updateProvider));
-    }
   };
 
   const handleLogout = async () => {
