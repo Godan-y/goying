@@ -733,11 +733,9 @@ export default function App() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div>
               <div className="flex items-center space-x-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 font-display text-base font-bold text-white">
-                  G
-                </div>
+                <img src="/goying-services-logo.png" alt="Goying Services" className="h-9 w-9 object-contain" />
                 <span className="font-display text-lg font-bold tracking-tight text-white">
-                  Goying<span className="text-orange-500">.</span>
+                  Goying Services
                 </span>
               </div>
               <p className="mt-2 text-xs text-slate-400 max-w-xs leading-relaxed">

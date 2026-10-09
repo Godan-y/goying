@@ -25,12 +25,12 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
         <motion.div
           animate={{ rotate: [0, -4, 4, 0], scale: [1, 1.04, 1] }}
           transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
-          className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-4xl font-black shadow-2xl shadow-blue-600/40"
+          className="flex h-24 w-24 items-center justify-center"
         >
-          G
+          <img src="/goying-services-logo.png" alt="Goying" className="h-full w-full object-contain" />
         </motion.div>
         <div className="mt-5 flex items-center gap-2">
-          <h1 className="font-display text-4xl font-black tracking-tight">Goying<span className="text-orange-400">.</span></h1>
+          <h1 className="font-display text-3xl font-black tracking-tight sm:text-4xl">Goying</h1>
           <Sparkles className="h-5 w-5 text-orange-300" aria-hidden="true" />
         </div>
         <p className="mt-2 text-sm leading-relaxed text-slate-300">Vos besoins, nos solutions.</p>
