@@ -70,7 +70,7 @@ service cloud.firestore {
         resource.data.email == request.auth.token.email &&
         request.resource.data.diff(resource.data).affectedKeys().hasOnly([
           "name", "phone", "country", "city", "commune", "bio", "specialty",
-          "skills", "priceRate", "avatarUrl", "portfolio", "providerAvailability"
+          "skills", "priceRate", "avatarUrl", "photo_profil", "portfolio", "providerAvailability"
         ]) &&
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(["providerAvailability"]) ||
          request.resource.data.providerAvailability == "disponible" ||
@@ -107,7 +107,8 @@ service cloud.firestore {
       allow delete: if admin();
     }
     match /professionalAccounts/{id} {
-      allow get, list: if admin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow get: if admin() || (signedIn() && (id == request.auth.uid || resource.data.uid == request.auth.uid));
+      allow list: if admin() || (signedIn() && resource.data.uid == request.auth.uid);
       allow create: if signedIn() && id == request.auth.uid && request.resource.data.uid == request.auth.uid;
       allow update: if admin() || (
         signedIn() &&

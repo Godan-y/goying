@@ -26,8 +26,11 @@ export default function ProfessionalProfileModal({
   const isApproved = session.providerStatus === "Confirmé";
   const isRejected = session.providerStatus === "Refusé";
   const listingData = (listing || {}) as Partial<Chauffeur & SecondaryProvider>;
+  const listingRecord = listingData as Record<string, unknown>;
+  const storedPhone = [listingData.phone, listingRecord.telephone, listingRecord.whatsapp, listingRecord.whatsApp]
+    .find((value): value is string => typeof value === "string" && value.trim().length > 0) || "";
   const [fullName, setFullName] = useState(listing?.name || session.fullName);
-  const [phone, setPhone] = useState(listingData.phone || "");
+  const [phone, setPhone] = useState(() => toInternationalPhone(storedPhone) || normalizePhoneInput(storedPhone));
   const [country, setCountry] = useState(listingData.country || "");
   const [city, setCity] = useState(listingData.city || "");
   const [commune, setCommune] = useState(listingData.commune || "");

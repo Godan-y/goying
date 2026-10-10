@@ -5,8 +5,10 @@ export function normalizePhoneInput(value: string): string {
 }
 
 export function toInternationalPhone(value: string): string | null {
-  const trimmed = value.trim();
-  const normalizedPrefix = trimmed.startsWith("00") ? `+${trimmed.slice(2)}` : trimmed;
+  const compact = value
+    .normalize("NFKC")
+    .replace(/[\s\u200B\uFEFF().-]/g, "");
+  const normalizedPrefix = compact.startsWith("00") ? `+${compact.slice(2)}` : compact;
   const digits = normalizedPrefix.replace(/\D/g, "");
   if (!normalizedPrefix.startsWith("+") || !/^[1-9]\d{7,14}$/.test(digits)) {
     return null;

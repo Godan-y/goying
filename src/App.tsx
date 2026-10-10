@@ -269,11 +269,12 @@ export default function App() {
   };
 
   const handleAcknowledgeBooking = async (id: string) => {
-    setBookings((prev) => prev.filter((booking) => booking.id !== id));
     try {
       await firebaseAcknowledgeBooking(id);
-    } catch (err) {
-      console.error("Error acknowledging booking:", err);
+      setBookings((prev) => prev.filter((booking) => booking.id !== id));
+    } catch (error) {
+      console.error("Error acknowledging booking:", error);
+      throw new Error("Votre confirmation n'a pas pu être enregistrée. Veuillez réessayer.");
     }
   };
 

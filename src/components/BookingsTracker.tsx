@@ -11,7 +11,7 @@ interface BookingsTrackerProps {
   onClose: () => void;
   onRetry: () => void;
   onCancelBooking: (id: string) => Promise<void>;
-  onAcknowledgeBooking: (id: string) => void;
+  onAcknowledgeBooking: (id: string) => Promise<void>;
   onSubmitReview: (booking: Booking, rating: number, comment: string) => Promise<void>;
 }
 
@@ -35,6 +35,9 @@ export default function BookingsTracker({
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
   const [deleteSuccess, setDeleteSuccess] = useState(false);
+  const [acknowledgingBookingId, setAcknowledgingBookingId] = useState<string | null>(null);
+  const [acknowledgementErrorBookingId, setAcknowledgementErrorBookingId] = useState<string | null>(null);
+  const [acknowledgementError, setAcknowledgementError] = useState("");
 
   useEffect(() => {
     if (!deleteSuccess) return;
@@ -73,6 +76,21 @@ export default function BookingsTracker({
       setDeleteError(error instanceof Error ? error.message : "La réservation n'a pas pu être supprimée. Veuillez réessayer.");
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const acknowledgeBooking = async (bookingId: string) => {
+    if (acknowledgingBookingId) return;
+    setAcknowledgingBookingId(bookingId);
+    setAcknowledgementErrorBookingId(null);
+    setAcknowledgementError("");
+    try {
+      await onAcknowledgeBooking(bookingId);
+    } catch (error) {
+      setAcknowledgementErrorBookingId(bookingId);
+      setAcknowledgementError(error instanceof Error ? error.message : "Votre confirmation n'a pas pu être enregistrée. Veuillez réessayer.");
+    } finally {
+      setAcknowledgingBookingId(null);
     }
   };
 
@@ -196,12 +214,18 @@ export default function BookingsTracker({
                 </div>
 
                 {book.status === "Confirmé" && (
-                  <button
-                    onClick={() => onAcknowledgeBooking(book.id)}
-                    className="mt-3 w-full rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-500 transition-colors"
+                  <button type="button"
+                    disabled={acknowledgingBookingId === book.id}
+                    onClick={() => void acknowledgeBooking(book.id)}
+                    className="mt-3 flex min-h-11 w-full touch-manipulation items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    OK, j'ai pris connaissance
+                    {acknowledgingBookingId === book.id ? "Enregistrement…" : "OK, j'ai pris connaissance"}
                   </button>
+                )}
+                {book.status === "Confirmé" && acknowledgementErrorBookingId === book.id && acknowledgementError && (
+                  <p role="alert" className="mt-2 break-words rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+                    {acknowledgementError}
+                  </p>
                 )}
 
                 {book.status === "Terminé" && book.providerId && book.providerCollection && (

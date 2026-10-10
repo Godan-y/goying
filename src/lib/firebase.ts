@@ -661,7 +661,7 @@ async function uploadProfessionalImages(images: File[], uploadType: "portfolio" 
     images: images.map((image) => ({ contentType: image.type })),
   });
   const uploads = payload.uploads as Array<{ url: string; fields: Record<string, string>; publicUrl: string }> | undefined;
-  if (!response.ok || !uploads) throw new Error(String(payload.error || "Impossible de préparer l'envoi des images."));
+  if (!response.ok || !uploads) throw new Error(String(payload.error || payload.detail || "Impossible de préparer l'envoi des images."));
   await Promise.all(uploads.map(async (upload, index) => {
     const form = new FormData();
     Object.entries(upload.fields).forEach(([key, value]) => form.append(key, value));
@@ -695,10 +695,12 @@ export async function updateProfessionalProfile(
   ]);
   const portfolio = [...profile.portfolio, ...uploadedPortfolio].slice(0, 6);
   const avatarUrl = uploadedAvatar[0] || profile.avatarUrl || listing.avatarUrl;
+  const isHousekeeper = "specialty" in listing && listing.specialty === "ménagère";
   const listingUpdate = {
     name: profile.fullName, phone: profile.phone, country: profile.country, city: profile.city,
     commune: profile.commune, bio: profile.bio, specialty: profile.specialty, skills: profile.skills, priceRate: profile.priceRate,
-    avatarUrl, portfolio,
+    ...(isHousekeeper ? { photo_profil: avatarUrl } : { avatarUrl }),
+    portfolio,
   };
   await updateDoc(doc(db, providersCollection, listing.id), listingUpdate);
   return { avatarUrl, portfolio };
@@ -895,17 +897,18 @@ export async function refreshProfessionalSession(session: UserSession): Promise<
   const accountStatus = normalizeProviderStatus(accountData?.status);
   const applicationListing = applicationData?.listing as ProviderListing | undefined;
   let providerListing: ProviderListing | undefined;
-  if (applicationListing?.id) {
+  const shouldLookupVerifiedListing = applicationStatus === "Confirmé" || accountStatus === "Confirmé";
+  if (shouldLookupVerifiedListing && applicationListing?.id) {
     const collectionName = "specialty" in applicationListing ? providersCollection : chauffeursCollection;
     const provider = await getDoc(doc(db, collectionName, applicationListing.id));
     if (provider.exists()) providerListing = { ...provider.data(), id: provider.id } as ProviderListing;
   }
-  if (!providerListing && typeof accountData?.applicationId === "string" && accountData.applicationId) {
+  if (shouldLookupVerifiedListing && !providerListing && typeof accountData?.applicationId === "string" && accountData.applicationId) {
     const providers = await getDocs(query(collection(db, providersCollection),
       where("verified", "==", true), where("applicationId", "==", accountData.applicationId)));
     if (!providers.empty) providerListing = { ...providers.docs[0].data(), id: providers.docs[0].id } as ProviderListing;
   }
-  if (!providerListing && session.email) {
+  if (shouldLookupVerifiedListing && !providerListing && session.email) {
     const providers = await getDocs(query(collection(db, providersCollection),
       where("verified", "==", true), where("email", "==", session.email.toLowerCase())));
     if (!providers.empty) providerListing = { ...providers.docs[0].data(), id: providers.docs[0].id } as ProviderListing;
