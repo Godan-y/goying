@@ -109,7 +109,7 @@ service cloud.firestore {
     match /professionalAccounts/{id} {
       allow get: if admin() || (signedIn() && (id == request.auth.uid || resource.data.uid == request.auth.uid));
       allow list: if admin() || (signedIn() && resource.data.uid == request.auth.uid);
-      allow create: if signedIn() && id == request.auth.uid && request.resource.data.uid == request.auth.uid;
+      allow create: if admin();
       allow update: if admin() || (
         signedIn() &&
         resource.data.uid == request.auth.uid &&
@@ -120,8 +120,7 @@ service cloud.firestore {
     match /professionalApplications/{id} {
       allow get: if admin() || (signedIn() && resource.data.session.uid == request.auth.uid);
       allow list: if admin() || (signedIn() && resource.data.session.uid == request.auth.uid);
-      allow create: if signedIn() && request.resource.data.session.uid == request.auth.uid;
-      allow update, delete: if admin();
+      allow create, update, delete: if admin();
     }
     match /reviews/{id} { allow read: if true; allow write: if admin(); }
     match /properties/{id} { allow read: if admin(); allow write: if admin(); }

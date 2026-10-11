@@ -813,27 +813,15 @@ export async function onboardProfessional(
       throw signInError;
     }
   }
-  const accounts = await getDocs(query(collection(db, professionalAccountsCollection), where("uid", "==", credential.user.uid)));
-  if (!accounts.empty) {
-    const status = normalizeProviderStatus(record(accounts.docs[0].data()).status);
-    throw new Error(status === "Refusé"
-      ? "Un dossier prestataire existe déjà et a été refusé. Contactez l'équipe Goying avant une nouvelle soumission."
-      : "Un dossier prestataire existe déjà pour ce compte.");
-  }
   const listing = driver || provider;
-  const application = {
-    id: `application-${Date.now()}`,
-    session: { ...session, uid: credential.user.uid, email, isLoggedIn: true },
+  if (!listing) throw new Error("Informations de profil manquantes.");
+  const { response, payload } = await authenticatedPost("/api/professional-applications", {
+    fullName: session.fullName,
+    phone: session.phone,
+    specialty: session.specialty,
     listing,
-    specialty: session.specialty || "Général",
-    status: "En attente",
-    submittedAt: new Date().toISOString(),
-  };
-  await setDoc(doc(db, professionalApplicationsCollection, application.id), application);
-  await setDoc(doc(db, professionalAccountsCollection, credential.user.uid), {
-    uid: credential.user.uid, email, fullName: session.fullName, role: "prestataire",
-    specialty: session.specialty || "Général", status: "En attente", applicationId: application.id,
   });
+  if (!response.ok) throw new Error(String(payload.detail || payload.error || "Votre dossier n'a pas pu être enregistré."));
   return { ...session, uid: credential.user.uid, email, isLoggedIn: true };
 }
 

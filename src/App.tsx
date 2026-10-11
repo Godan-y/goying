@@ -305,8 +305,7 @@ export default function App() {
     password?: string
   ) => {
     // Save to Firestore
-    const registeredSession = await onboardProfessional(newSession, password || "", newDriver, newServiceProv);
-    setSession({ ...registeredSession, providerStatus: "En attente" });
+    await onboardProfessional(newSession, password || "", newDriver, newServiceProv);
   };
 
   const handleCommissionnaireClick = () => {

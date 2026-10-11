@@ -14,9 +14,6 @@ import {
   Phone,
   Compass,
   Clock,
-  Copy,
-  Check,
-  MessageCircle,
   AlertCircle,
   ShieldCheck,
   Send,
@@ -42,10 +39,9 @@ export default function OnboardingPortal({
   onRegisterProfessional,
 }: OnboardingPortalProps) {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
-  const [adminManagedSpecialty, setAdminManagedSpecialty] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const [copiedNumber, setCopiedNumber] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Common Form Fields
   const [nom, setNom] = useState("");
@@ -150,19 +146,9 @@ export default function OnboardingPortal({
 
   const fullFullName = [nom, postNom, prenom].filter(Boolean).join(" ") || nom || "Prestataire";
 
-  const handleCopyPhone = () => {
-    navigator.clipboard.writeText("+243973199473");
-    setCopiedNumber(true);
-    setTimeout(() => setCopiedNumber(false), 2500);
-  };
-
-  const getWhatsAppLink = () => {
-    const message = `Bonjour Goying,\nJe viens de soumettre mon dossier de prestataire (${selectedSpecialty || "Service"}).\nVoici la capture de mon paiement de 10.000 FC pour la validation de mon dossier.\n- Nom : ${nom}\n- Post-nom : ${postNom}\n- Prénom : ${prenom}\n- Téléphone : ${phone}\n- Ville : ${city}\n\nMerci pour votre confiance !`;
-    return `https://wa.me/243973199473?text=${encodeURIComponent(message)}`;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setSubmitError("");
 
     if (!nom || !prenom || !email || !password || !phone) {
@@ -279,6 +265,7 @@ export default function OnboardingPortal({
       };
     }
 
+    setIsSubmitting(true);
     try {
       await onRegisterProfessional(session, newDriver, newServiceProv, password, portfolioImages);
       setIsSubmitted(true);
@@ -289,6 +276,8 @@ export default function OnboardingPortal({
           ? `Votre dossier n'a pas pu être envoyé : ${error.message}`
           : "Votre dossier n'a pas pu être envoyé. Vérifiez votre connexion puis réessayez."
       );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -322,9 +311,8 @@ export default function OnboardingPortal({
             </div>
           </div>
 
-          <div className="p-6 sm:p-8 space-y-6">
-            {/* Notice d'activation & Paiement */}
-            <div className="rounded-2xl bg-amber-50 border border-amber-200/80 p-5 sm:p-6 space-y-4">
+          <div className="space-y-6 p-6 sm:p-8">
+            <div className="rounded-2xl border border-amber-200/80 bg-amber-50 p-5 sm:p-6">
               <div className="flex items-start gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white font-bold text-sm shadow-sm">
                   1
@@ -334,99 +322,22 @@ export default function OnboardingPortal({
                     Frais de traitement & activation : 10.000 FC
                   </h4>
                   <p className="mt-1 text-sm text-slate-700 leading-relaxed">
-                    Veuillez envoyer <strong className="text-amber-800 font-bold">10.000 FC</strong> au numéro suivant :
+                    Payez avec le même nom complet et le même numéro WhatsApp que ceux indiqués dans votre demande.
                   </p>
-                  <p className="mt-2 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold leading-relaxed text-red-700">
-                    Important : si les frais de traitement ne sont pas payés dans les deux jours suivant la soumission, votre dossier sera rejeté.
-                  </p>
-                  
-                  {/* Numéro Box avec Copier */}
-                  <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl bg-white p-3 border border-amber-300 shadow-sm">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Numéro de transfert (Mobile Money)</p>
-                      <p className="break-all text-lg font-bold font-mono text-slate-900 tracking-normal sm:text-xl sm:tracking-wider">
-                        +243 973199473
-                      </p>
-                      <p className="text-xs text-emerald-700 font-semibold mt-0.5">
-                        Nom qui s'affichera lors du transfert : <span className="underline decoration-emerald-500 font-bold">Goying</span>
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={handleCopyPhone}
-                      className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-slate-800 active:scale-95 sm:w-auto"
-                    >
-                      {copiedNumber ? (
-                        <>
-                          <Check className="h-4 w-4 text-emerald-400" />
-                          <span>Copié !</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="h-4 w-4" />
-                          <span>Copier le numéro</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Étape 2 : Capture de la transaction */}
-              <div className="flex items-start gap-3 pt-2 border-t border-amber-200/60">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white font-bold text-sm shadow-sm">
-                  2
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-base font-bold text-slate-900">
-                    Demandez une capture auprès de votre distributeur
-                  </h4>
-                  <p className="mt-1 text-sm text-slate-700 leading-relaxed">
-                    Demandez-en une capture de la transaction (ou reçu) auprès de votre distributeur ou agent de transfert.
-                  </p>
-                </div>
-              </div>
-
-              {/* Étape 3 : Envoi sur WhatsApp */}
-              <div className="flex items-start gap-3 pt-2 border-t border-amber-200/60">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white font-bold text-sm shadow-sm">
-                  3
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-base font-bold text-slate-900">
-                    Envoyez la capture sur WhatsApp
-                  </h4>
-                  <p className="mt-1 text-sm text-slate-700 leading-relaxed">
-                    Envoyez sur le même numéro (<strong className="text-slate-900 font-mono">+243 973199473</strong>) cette capture sur WhatsApp tout en mettant votre :
-                  </p>
-                  <div className="mt-2.5 inline-flex flex-wrap gap-2 text-xs font-semibold">
-                    <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-emerald-900 border border-emerald-300">
-                      Nom : {nom || "—"}
-                    </span>
-                    <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-emerald-900 border border-emerald-300">
-                      Post-nom : {postNom || "—"}
-                    </span>
-                    <span className="rounded-lg bg-emerald-100 px-2.5 py-1 text-emerald-900 border border-emerald-300">
-                      Prénom : {prenom || "—"}
-                    </span>
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Bouton d'action WhatsApp Direct */}
             <div className="space-y-3">
               <a
-                href={getWhatsAppLink()}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-emerald-600 px-6 py-3.5 text-sm sm:text-base font-bold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-500 active:scale-[0.98] transition-all text-center"
+                href="https://vceccwzb.mychariow.shop/prd_w26ss0yl"
+                className="flex w-full items-center justify-center gap-2.5 rounded-2xl bg-orange-600 px-6 py-3.5 text-center text-sm font-bold text-white shadow-lg shadow-orange-600/25 transition-all hover:bg-orange-500 active:scale-[0.98] sm:text-base"
               >
-                <MessageCircle className="h-5 w-5 fill-current" />
-                Envoyer la capture sur WhatsApp (+243 973199473)
+                <DollarSign className="h-5 w-5" />
+                Payer avec Chariow
               </a>
-
               <button
+                type="button"
                 onClick={onClose}
                 className="w-full rounded-2xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
               >
@@ -434,13 +345,12 @@ export default function OnboardingPortal({
               </button>
             </div>
 
-            {/* Message de confiance */}
             <div className="border-t border-slate-100 pt-4 text-center">
               <p className="text-sm font-semibold text-slate-800">
                 Merci pour votre confiance.
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                Dès réception et vérification de la capture par l'équipe Goying, votre compte sera activé et votre profil mis en ligne.
+                Votre demande est en attente de vérification. Nous confirmerons votre profil après vérification manuelle du paiement.
               </p>
             </div>
           </div>
@@ -474,7 +384,7 @@ export default function OnboardingPortal({
       </div>
 
       <AnimatePresence mode="wait">
-        {!selectedSpecialty && !adminManagedSpecialty ? (
+        {!selectedSpecialty ? (
           /* SECTION 1: SELECTION DE LA SPECIALITE */
           <motion.div
             initial={{ opacity: 0, y: 15 }}
@@ -498,11 +408,7 @@ export default function OnboardingPortal({
                     id={`specialty-card-${spec.id}`}
                     onClick={() => {
                       if (spec.active) {
-                        if (spec.id === "chauffeur" || spec.id === "menagere") {
-                          setAdminManagedSpecialty(spec.title);
-                        } else {
-                          setSelectedSpecialty(spec.id);
-                        }
+                        setSelectedSpecialty(spec.id);
                       }
                     }}
                     className={`relative overflow-hidden rounded-2xl border p-5 transition-all duration-300 ${
@@ -528,43 +434,6 @@ export default function OnboardingPortal({
                   </div>
                 );
               })}
-            </div>
-          </motion.div>
-        ) : adminManagedSpecialty ? (
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -15 }}
-            className="mx-auto max-w-xl rounded-3xl border border-blue-100 bg-white p-6 text-center shadow-sm sm:p-8"
-          >
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
-              <MessageCircle className="h-7 w-7" />
-            </div>
-            <h2 className="mt-4 font-display text-2xl font-bold text-slate-900">
-              Candidature gérée par notre équipe
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-slate-600">
-              Si vous souhaitez postuler au poste de <strong>{adminManagedSpecialty}</strong>, veuillez écrire au numéro{" "}
-              <strong className="text-slate-900">973199473</strong>.
-            </p>
-            <p className="mt-2 text-sm font-semibold text-slate-700">Merci pour votre intérêt.</p>
-            <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
-              <a
-                href={`https://wa.me/243973199473?text=${encodeURIComponent(`Bonjour Goying, je souhaite postuler comme ${adminManagedSpecialty}.`)}`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700"
-              >
-                <MessageCircle className="h-4 w-4" />
-                Écrire sur WhatsApp
-              </a>
-              <button
-                type="button"
-                onClick={() => setAdminManagedSpecialty(null)}
-                className="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50"
-              >
-                Choisir un autre métier
-              </button>
             </div>
           </motion.div>
         ) : (
@@ -1098,9 +967,10 @@ export default function OnboardingPortal({
                   </button>
                   <button
                     type="submit"
-                    className="rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-100 hover:bg-orange-500 transition-colors"
+                    disabled={isSubmitting}
+                    className="rounded-xl bg-orange-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-orange-100 transition-colors hover:bg-orange-500 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Soumettre mon dossier
+                    {isSubmitting ? "Envoi du dossier…" : "Soumettre mon dossier"}
                   </button>
                 </div>
               </div>
