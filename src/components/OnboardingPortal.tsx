@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
+import { KINSHASA_COMMUNES } from "../lib/kinshasaCommunes";
 import {
   Briefcase,
   Car,
@@ -57,7 +58,7 @@ export default function OnboardingPortal({
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
-  const [experienceYears, setExperienceYears] = useState(3);
+  const [experienceYears, setExperienceYears] = useState("");
   const [country, setCountry] = useState("RDC");
   const [city, setCity] = useState("Kinshasa");
   const [commune, setCommune] = useState("");
@@ -162,6 +163,10 @@ export default function OnboardingPortal({
       alert("Veuillez renseigner votre Nom, Prénom, Email, Mot de passe et Téléphone.");
       return;
     }
+    if (!/^\d+$/.test(experienceYears) || Number(experienceYears) > 40) {
+      setSubmitError("Indiquez un nombre entier d'années d'expérience compris entre 0 et 40.");
+      return;
+    }
     const internationalPhone = toInternationalPhone(phone);
     if (!internationalPhone) {
       setSubmitError(`Numéro WhatsApp invalide. ${internationalPhoneHint}`);
@@ -178,6 +183,7 @@ export default function OnboardingPortal({
       phone: internationalPhone,
     };
 
+    const parsedExperienceYears = Number(experienceYears);
     let newDriver: Chauffeur | undefined;
     let newServiceProv: SecondaryProvider | undefined;
 
@@ -198,7 +204,7 @@ export default function OnboardingPortal({
         vehicleModel: carModel || "Berline Classique",
         serviceType: driverServiceType,
         transmission: driverTransmission,
-        experienceYears: experienceYears,
+        experienceYears: parsedExperienceYears,
         skills: [],
         country,
         city,
@@ -269,7 +275,7 @@ export default function OnboardingPortal({
         subjects: selectedSpecialty === "professeur"
           ? skillsFromInput(tutorSubject, ["Soutien scolaire"])
           : undefined,
-        experienceYears: experienceYears,
+        experienceYears: parsedExperienceYears,
         managementMode: selectedSpecialty === "menagere" ? "admin" : "provider",
       };
     }
@@ -609,14 +615,17 @@ export default function OnboardingPortal({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">Commune (Requis)</label>
-                    <input
-                      type="text"
+                    <select
                       required
-                      placeholder="Ex: Ngaliema"
                       value={commune}
                       onChange={(e) => setCommune(e.target.value)}
                       className="block w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                    />
+                    >
+                      <option value="">Sélectionnez votre commune</option>
+                      {KINSHASA_COMMUNES.map((communeName) => (
+                        <option key={communeName} value={communeName}>{communeName}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -624,14 +633,18 @@ export default function OnboardingPortal({
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">Années d'expérience professionnelle</label>
                     <input
-                      type="number"
+                      type="text"
                       required
-                      min={0}
-                      max={40}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      aria-describedby="experience-years-help"
                       value={experienceYears}
-                      onChange={(e) => setExperienceYears(parseInt(e.target.value) || 0)}
+                      onChange={(e) => setExperienceYears(e.target.value)}
                       className="block w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                     />
+                    <p id="experience-years-help" className="mt-1 text-[11px] text-slate-500">
+                      Saisissez un nombre entier entre 0 et 40.
+                    </p>
                   </div>
 
                   <div>
