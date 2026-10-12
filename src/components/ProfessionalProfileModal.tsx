@@ -3,6 +3,7 @@ import { ClipboardCheck, CircleAlert, Power, Upload, UserRound, X, Trash2 } from
 import { Booking, Chauffeur, SecondaryProvider, UserSession } from "../types";
 import { getProviderBookings, requestProviderCompletion, updateProfessionalProfile, updateProviderAvailability } from "../lib/firebase";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
+import { isKinshasaCommune, KINSHASA_COMMUNES } from "../lib/kinshasaCommunes";
 import { Lightbox } from "./Lightbox";
 
 interface ProfessionalProfileModalProps {
@@ -55,6 +56,7 @@ export default function ProfessionalProfileModal({
   );
   const isAdminUnavailable = listingData.status === "indisponible";
   const hasAvailabilityControl = hasPersonalAvailabilityControl(listingData);
+  const hasLegacyCommune = Boolean(commune) && !isKinshasaCommune(commune);
 
   useEffect(() => {
     if (!isOpen || !isApproved || !listing?.id || !hasAvailabilityControl) return;
@@ -235,7 +237,6 @@ export default function ProfessionalProfileModal({
             ["Téléphone / WhatsApp", phone, setPhone],
             ["Pays", country, setCountry],
             ["Ville", city, setCity],
-            ["Commune", commune, setCommune],
             ["Spécialité", specialty, setSpecialty],
             ["Compétences clés", skills, setSkills],
             ["Tarif", priceRate, setPriceRate],
@@ -245,6 +246,14 @@ export default function ProfessionalProfileModal({
               <input type={label === "Téléphone / WhatsApp" ? "tel" : "text"} placeholder={label === "Téléphone / WhatsApp" ? "+243 857068014" : label === "Compétences clés" ? "Ex. Brushing, Tresses, Soins" : undefined} value={value as string} disabled={!isApproved} onChange={(e) => (setter as (value: string) => void)(label === "Téléphone / WhatsApp" ? normalizePhoneInput(e.target.value) : e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-normal text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100" />
             </label>
           ))}
+          <label className="text-xs font-semibold text-slate-600">
+            Commune
+            <select required value={commune} disabled={!isApproved} onChange={(event) => setCommune(event.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-900 disabled:cursor-not-allowed disabled:bg-slate-100">
+              <option value="">Sélectionnez votre commune</option>
+              {hasLegacyCommune && <option value={commune}>{commune} (valeur existante)</option>}
+              {KINSHASA_COMMUNES.map((communeName) => <option key={communeName} value={communeName}>{communeName}</option>)}
+            </select>
+          </label>
           <p className="text-[11px] text-slate-500 sm:col-span-2">{internationalPhoneHint}</p>
           <p className="text-[11px] text-slate-500 sm:col-span-2">Séparez chaque compétence par une virgule.</p>
           <label className="text-xs font-semibold text-slate-600 sm:col-span-2">

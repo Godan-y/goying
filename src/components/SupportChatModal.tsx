@@ -47,7 +47,7 @@ function getSupportResponse(question: string) {
     return "Ouvrez le service souhaité, choisissez une offre puis remplissez le formulaire de demande. Vous pouvez suivre vos demandes depuis « Mes Réservations ». Une réservation terminée peut ensuite être évaluée lorsque son statut est « Terminé ».";
   }
   if (/(prestataire|coiffeur|maquille|professeur|devenir pro|dossier)/.test(text)) {
-    return "Pour devenir prestataire, ouvrez « Espace Prestataire » et remplissez votre dossier. Les profils autonomes validés peuvent compléter leur profil, ajouter une photo et un portfolio. Les candidatures Chauffeur et Ménager/Ménagère sont traitées par l'administration.";
+    return "Pour devenir prestataire, ouvrez « Devenir prestataire » et remplissez votre dossier. Les profils autonomes validés peuvent compléter leur profil, ajouter une photo et un portfolio. Les candidatures Chauffeur et Ménager/Ménagère sont traitées par l'administration.";
   }
   if (/(chauffeur|menager|menagere)/.test(text)) {
     return "Les chauffeurs et ménagers/ménagères sont ajoutés et gérés par l'administration. Pour postuler à l'un de ces postes, écrivez au +243 973199473 en précisant le poste souhaité.";

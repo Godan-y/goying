@@ -65,7 +65,7 @@ export default function Header({
               className="flex shrink-0 items-center gap-1 rounded-full border border-orange-200 bg-orange-50 px-2.5 py-2 text-[11px] font-semibold text-orange-700 transition-colors hover:bg-orange-100 hover:text-orange-800 xl:gap-1.5 xl:px-3 xl:py-2.5 xl:text-xs"
             >
               <Briefcase className="h-4 w-4" />
-              Espace Prestataire
+              Devenir prestataire
             </button>
           )}
           {bookings.length > 0 && (
@@ -162,7 +162,7 @@ export default function Header({
                 Soumettre une maison
               </button>
 
-              {/* Espace Prestataire */}
+              {/* Devenir prestataire */}
               {session.role !== "prestataire" && (
                 <button
                   onClick={() => {
@@ -172,7 +172,7 @@ export default function Header({
                   className="flex items-center gap-2.5 w-full px-4 py-3 text-sm font-semibold text-orange-700 rounded-xl bg-orange-50/75 border border-orange-100 hover:bg-orange-100 transition-all text-left"
                 >
                   <Briefcase className="h-4 w-4" />
-                  Espace Prestataire
+                  Devenir prestataire
                 </button>
               )}
 

@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { Car, CheckCircle2, X } from "lucide-react";
 import { submitVehicle, uploadVehicleSubmissionImage } from "../lib/firebase";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
+import { KINSHASA_COMMUNES } from "../lib/kinshasaCommunes";
 import { UserSession } from "../types";
 
 interface VehicleSubmissionModalProps {
@@ -117,7 +118,7 @@ export default function VehicleSubmissionModal({ isOpen, onClose, session }: Veh
         <label className="block text-xs font-semibold text-slate-600">Informations complémentaires<textarea rows={3} maxLength={1500} value={form.additionalInformation} onChange={(event) => update("additionalInformation", event.target.value)} placeholder="État du moteur, entretien récent, documents disponibles ou autres particularités…" className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm" /></label>
         <label className="block text-xs font-semibold text-slate-600">Photos du véhicule <span className="font-normal text-slate-500">(facultatif)</span><input type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={(event) => setPhotos(Array.from(event.target.files || []))} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" /><span className="mt-1 block break-words font-normal leading-relaxed text-slate-500">Vous pouvez ajouter jusqu'à 6 photos (JPEG, PNG ou WebP, 5 Mo par photo). L’équipe Goying se déplacera pour prendre les photos officielles de l’annonce.</span></label>
         <fieldset className="space-y-3"><legend className="text-sm font-bold text-slate-900">Disponibilité pour une visite</legend><div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Quartier / commune *" value={form.commune} onChange={(value) => update("commune", value)} />
+          <Select label="Commune *" value={form.commune} onChange={(value) => update("commune", value)} options={KINSHASA_COMMUNES} placeholder="Sélectionnez votre commune" />
           <Field label="Adresse ou lieu approximatif *" value={form.visitAddress} onChange={(value) => update("visitAddress", value)} />
           <Field label="Jours disponibles *" value={form.availableDays} placeholder="Ex : lundi à samedi" onChange={(value) => update("availableDays", value)} />
           <Field label="Heures disponibles *" value={form.availableHours} placeholder="Ex : 9h à 17h" onChange={(value) => update("availableHours", value)} />
@@ -133,6 +134,6 @@ function Field({ label, value, onChange, type = "text", placeholder, min, max }:
   return <label className="text-xs font-semibold text-slate-600">{label}<input required type={type} min={min} max={max} placeholder={placeholder} value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm" /></label>;
 }
 
-function Select({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
-  return <label className="text-xs font-semibold text-slate-600">{label}<select value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm">{options.map((option) => <option key={option}>{option}</option>)}</select></label>;
+function Select({ label, value, onChange, options, placeholder }: { label: string; value: string; onChange: (value: string) => void; options: readonly string[]; placeholder?: string }) {
+  return <label className="text-xs font-semibold text-slate-600">{label}<select required value={value} onChange={(event) => onChange(event.target.value)} className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm">{placeholder && <option value="">{placeholder}</option>}{options.map((option) => <option key={option}>{option}</option>)}</select></label>;
 }
