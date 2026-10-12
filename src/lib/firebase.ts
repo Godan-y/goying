@@ -80,8 +80,15 @@ function apiErrorMessage(payload: FirestoreRecord, fallback: string): string {
     const messages = detail
       .map((entry) => {
         if (!entry || typeof entry !== "object") return "";
-        const message = record(entry).msg;
-        return typeof message === "string" ? message.trim() : "";
+        const validationError = record(entry);
+        const message = validationError.msg;
+        if (typeof message !== "string" || !message.trim()) return "";
+        const location = validationError.loc;
+        if (!Array.isArray(location)) return message.trim();
+        const field = location
+          .filter((part) => typeof part === "string" && part !== "body")
+          .join(".");
+        return field ? `${field} : ${message.trim()}` : message.trim();
       })
       .filter(Boolean);
     if (messages.length) return [...new Set(messages)].join(" ");

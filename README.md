@@ -21,11 +21,23 @@ View your app in AI Studio: https://ai.studio/apps/4478b52d-b52c-4c6e-a8b5-0237c
 
    ```powershell
    npm.cmd run dev
-   npm.cmd run build
-   
-git add .
+   ```
+
+## Préparer un commit
+
+Après avoir vérifié le build avec `npm.cmd run build`, inspectez d'abord les fichiers modifiés :
+
+```powershell
+git status --short
+```
+
+Ajoutez ensuite seulement les fichiers source concernés, plutôt que d'utiliser `git add .`, puis créez et poussez le commit :
+
+```powershell
+git add chemin\vers\le\fichier-modifie
 git commit -m "Description de mes modifications"
 git push
+```
 
 ## Numéros WhatsApp
 
