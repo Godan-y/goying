@@ -63,7 +63,7 @@ const professionalAccountsCollection = "professionalAccounts";
 type FirestoreRecord = Record<string, unknown>;
 type ProviderListing = Chauffeur | SecondaryProvider;
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.DEV ? "" : "https://backend-goying.onrender.com")).replace(/\/+$/, "");
+  "https://backend-goying.onrender.com").replace(/\/+$/, "");
 
 function apiUrl(path: string) {
   return `${apiBaseUrl}${path}`;
@@ -483,7 +483,17 @@ async function authenticatedPost(path: string, body: unknown) {
     headers: { Authorization: ["Bear", "er "].join("") + token, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return { response, payload: await response.json() as FirestoreRecord };
+  const contentType = response.headers.get("content-type") || "";
+  const responseText = await response.text();
+  if (!contentType.includes("application/json")) {
+    throw new Error("Le service sécurisé est momentanément indisponible. Veuillez réessayer plus tard.");
+  }
+  try {
+    return { response, payload: JSON.parse(responseText) as FirestoreRecord };
+  } catch (error) {
+    console.error("Invalid JSON response from authenticated API:", error);
+    throw new Error("Le service sécurisé est momentanément indisponible. Veuillez réessayer plus tard.");
+  }
 }
 
 async function authenticatedDelete(path: string) {
