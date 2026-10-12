@@ -73,6 +73,22 @@ function record(value: unknown): FirestoreRecord {
   return value as FirestoreRecord;
 }
 
+function apiErrorMessage(payload: FirestoreRecord, fallback: string): string {
+  const detail = payload.detail ?? payload.error;
+  if (typeof detail === "string" && detail.trim()) return detail;
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((entry) => {
+        if (!entry || typeof entry !== "object") return "";
+        const message = record(entry).msg;
+        return typeof message === "string" ? message.trim() : "";
+      })
+      .filter(Boolean);
+    if (messages.length) return [...new Set(messages)].join(" ");
+  }
+  return fallback;
+}
+
 function s3ProfilePhotoUrl(value: unknown): string {
   if (typeof value !== "string" || !value.trim()) return "";
   try {
@@ -523,7 +539,7 @@ async function authenticatedDelete(path: string) {
     if (response.status === 404) {
       throw new Error("Le service de suppression est momentanément indisponible. Veuillez réessayer plus tard.");
     }
-    throw new Error(String(payload.detail || payload.error || "La réservation n'a pas pu être supprimée."));
+    throw new Error(apiErrorMessage(payload, "La réservation n'a pas pu être supprimée."));
   }
   return payload;
 }
@@ -831,7 +847,9 @@ export async function onboardProfessional(
     specialty: session.specialty,
     listing,
   });
-  if (!response.ok) throw new Error(String(payload.detail || payload.error || "Votre dossier n'a pas pu être enregistré."));
+  if (!response.ok) {
+    throw new Error(apiErrorMessage(payload, "Votre dossier n'a pas pu être enregistré."));
+  }
   return { ...session, uid: credential.user.uid, email, isLoggedIn: true };
 }
 
