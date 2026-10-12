@@ -34,6 +34,11 @@ interface OnboardingPortalProps {
   ) => Promise<void>;
 }
 
+function skillsFromInput(value: string, fallback: string[]): string[] {
+  const skills = value.split(",").map((skill) => skill.trim()).filter(Boolean);
+  return skills.length ? skills : fallback;
+}
+
 export default function OnboardingPortal({
   onClose,
   onRegisterProfessional,
@@ -72,9 +77,11 @@ export default function OnboardingPortal({
   const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
   const [hairdresserPrice, setHairdresserPrice] = useState(25);
   const [hairdresserPriceNegotiable, setHairdresserPriceNegotiable] = useState(false);
+  const [hairdresserSkills, setHairdresserSkills] = useState("");
 
   const [makeupPrice, setMakeupPrice] = useState(40);
   const [makeupPriceNegotiable, setMakeupPriceNegotiable] = useState(false);
+  const [makeupSkills, setMakeupSkills] = useState("");
 
   const [tutorDegree, setTutorDegree] = useState("");
   const [tutorSubject, setTutorSubject] = useState("");
@@ -215,17 +222,15 @@ export default function OnboardingPortal({
       switch (selectedSpecialty) {
         case "menagere":
           priceRate = `${housekeeperPrice}$ / mois`;
-          skills = housekeeperSkills
-            ? housekeeperSkills.split(",").map((s) => s.trim())
-            : ["Ménage", "Repassage", "Entretien quotidien"];
+          skills = skillsFromInput(housekeeperSkills, ["Ménage", "Repassage", "Entretien quotidien"]);
           break;
         case "coiffeur":
           priceRate = `à partir de $${hairdresserPrice}`;
-          skills = ["Brushing", "Coiffure à domicile", "Soins"];
+          skills = skillsFromInput(hairdresserSkills, ["Brushing", "Coiffure à domicile", "Soins"]);
           break;
         case "maquilleuse":
           priceRate = `à partir de $${makeupPrice}`;
-          skills = ["Teint impeccable", "Glow", "Mariage"];
+          skills = skillsFromInput(makeupSkills, ["Teint impeccable", "Glow", "Mariage"]);
           break;
         case "professeur":
           priceRate = `${tutorPrice}$ / mois`;
@@ -799,6 +804,19 @@ export default function OnboardingPortal({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                      Compétences (séparées par une virgule)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Tresses, Coloration, Brushing"
+                      value={hairdresserSkills}
+                      onChange={(e) => setHairdresserSkills(e.target.value)}
+                      className="block w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
                       Tarif de base estimé pour une coupe (EUR)
                     </label>
                     <input
@@ -842,6 +860,19 @@ export default function OnboardingPortal({
                       className="block w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm focus:border-pink-500 focus:outline-none focus:ring-1 focus:ring-pink-500"
                     />
                     <p className="mt-1 text-[11px] text-slate-500">JPEG, PNG ou WebP, 6 images maximum et 5 Mo par image.</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
+                      Compétences (séparées par une virgule)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Maquillage mariage, Teint, Maquillage soirée"
+                      value={makeupSkills}
+                      onChange={(e) => setMakeupSkills(e.target.value)}
+                      className="block w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm focus:border-pink-500 focus:outline-none focus:ring-1 focus:ring-pink-500"
+                    />
                   </div>
 
                   <div>
