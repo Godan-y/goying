@@ -378,6 +378,10 @@ export async function getProviders(): Promise<SecondaryProvider[]> {
         .flatMap((value) => value.split(/[,\n;]/))
         .map((item) => item.trim())
         .filter(Boolean);
+      const subjects = (Array.isArray(data.subjects) ? data.subjects.map(String) : [String(data.matieres || "")])
+        .flatMap((value) => value.split(/[,\n;]/))
+        .map((item) => item.trim())
+        .filter(Boolean);
       const provider = {
         ...data,
         id: String(data.id),
@@ -386,6 +390,10 @@ export async function getProviders(): Promise<SecondaryProvider[]> {
           ? s3ProfilePhotoUrl(data.photo_profil)
           : String(data.avatarUrl || data.photoUrl || ""),
         skills,
+        educationDegree: typeof data.educationDegree === "string"
+          ? data.educationDegree.trim()
+          : typeof data.diplome === "string" ? data.diplome.trim() : undefined,
+        subjects: subjects.length ? subjects : undefined,
         experienceYears: Number(data.experienceYears ?? data.anneesExperience ?? 0),
         priceRate: String(data.priceRate || "").replace(/€/g, "$")
           .replace(/\/ heure/g, specialty === "ménagère" || specialty === "professeur" ? "/ mois" : "/ heure") ||

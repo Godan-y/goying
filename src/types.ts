@@ -117,6 +117,8 @@ export interface SecondaryProvider {
   providerAvailability?: "disponible" | "indisponible";
   verified: boolean;
   skills: string[];
+  educationDegree?: string;
+  subjects?: string[];
   portfolio?: string[];
   experienceYears: number;
   managementMode: "admin" | "provider";

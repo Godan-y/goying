@@ -265,6 +265,10 @@ export default function OnboardingPortal({
         verified: false, // En attente de validation
         status: "disponible",
         skills: skills,
+        educationDegree: selectedSpecialty === "professeur" ? tutorDegree.trim() : undefined,
+        subjects: selectedSpecialty === "professeur"
+          ? skillsFromInput(tutorSubject, ["Soutien scolaire"])
+          : undefined,
         experienceYears: experienceYears,
         managementMode: selectedSpecialty === "menagere" ? "admin" : "provider",
       };

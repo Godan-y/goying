@@ -133,6 +133,17 @@ function publicationLabel(value?: string): string | null {
   }).format(date);
 }
 
+function teacherProfileDetails(provider: SecondaryProvider) {
+  const isDegree = (value: string) =>
+    /^(licence|master|doctorat|docteur|baccalaureat|bac|diplome|ingénieur|ingenieur|certificat)/i.test(value.trim());
+  const legacyDegree = provider.skills.find(isDegree);
+  const degree = provider.educationDegree?.trim() || legacyDegree;
+  const subjects = provider.subjects?.length
+    ? provider.subjects
+    : provider.skills.filter((skill) => skill !== legacyDegree);
+  return { degree, subjects };
+}
+
 /* ========================================== */
 /*           1. REAL ESTATE VIEW              */
 /* ========================================== */
@@ -1758,22 +1769,49 @@ export function SecondaryServicesView({ providers, onAddBooking, onRequireLogin,
             {/* Bio */}
             <ExpandableDescription description={prov.bio} className="mt-3.5 flex-grow" />
 
-            {/* Skills & Portfolio info */}
-            <div className="mt-4 pt-4 border-t border-slate-50">
-              <span className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">
-                Compétences clés :
-              </span>
-              <div className="flex flex-wrap gap-1">
-                {prov.skills.map((skill, i) => (
-                  <span
-                    key={i}
-                    className="rounded-md bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600 border border-slate-100"
-                  >
-                    ✓ {skill}
+            {prov.specialty === "professeur" ? (
+              <div className="mt-4 space-y-3 border-t border-slate-50 pt-4">
+                {teacherProfileDetails(prov).degree && (
+                  <div>
+                    <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Plus haut diplôme :
+                    </span>
+                    <p className="mt-1 text-xs font-semibold text-slate-700">{teacherProfileDetails(prov).degree}</p>
+                  </div>
+                )}
+                <div>
+                  <span className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Matières enseignées :
                   </span>
-                ))}
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {teacherProfileDetails(prov).subjects.map((subject, i) => (
+                      <span
+                        key={i}
+                        className="rounded-md border border-slate-100 bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600"
+                      >
+                        ✓ {subject}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="mt-4 border-t border-slate-50 pt-4">
+                <span className="mb-1.5 block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  Compétences clés :
+                </span>
+                <div className="flex flex-wrap gap-1">
+                  {prov.skills.map((skill, i) => (
+                    <span
+                      key={i}
+                      className="rounded-md border border-slate-100 bg-slate-50 px-2.5 py-0.5 text-[10px] font-semibold text-slate-600"
+                    >
+                      ✓ {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Portfolio realization books */}
             {prov.portfolio && prov.portfolio.length > 0 && (
