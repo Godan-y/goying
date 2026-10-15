@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
-import { KINSHASA_COMMUNES } from "../lib/kinshasaCommunes";
+import { ACTIVITY_COUNTRIES, citiesForCountry, cityForArea, isEligibleArea } from "../lib/geography";
 import {
   Briefcase,
   Car,
@@ -59,8 +59,8 @@ export default function OnboardingPortal({
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
   const [experienceYears, setExperienceYears] = useState("");
-  const [country, setCountry] = useState("RDC");
-  const [city, setCity] = useState("Kinshasa");
+  const [country, setCountry] = useState("");
+  const [city, setCity] = useState("");
   const [commune, setCommune] = useState("");
 
   // Specialty Specific Fields
@@ -153,6 +153,9 @@ export default function OnboardingPortal({
   ];
 
   const fullFullName = [nom, postNom, prenom].filter(Boolean).join(" ") || nom || "Prestataire";
+  const availableCities = citiesForCountry(country);
+  const selectedArea = cityForArea(country, city);
+  const isIneligibleArea = Boolean(country && city) && !isEligibleArea(country, city);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,6 +168,10 @@ export default function OnboardingPortal({
     }
     if (!/^\d+$/.test(experienceYears) || Number(experienceYears) > 40) {
       setSubmitError("Indiquez un nombre entier d'années d'expérience compris entre 0 et 40.");
+      return;
+    }
+    if (!isEligibleArea(country, city)) {
+      setSubmitError("Vous n'êtes pas encore éligible pour le moment dans cette zone.");
       return;
     }
     const internationalPhone = toInternationalPhone(phone);
@@ -583,37 +590,44 @@ export default function OnboardingPortal({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">Pays d'activité (Requis)</label>
-                    <input
-                      type="text"
+                    <select
                       required
-                      placeholder="Ex: RDC"
                       value={country}
-                      onChange={(e) => setCountry(e.target.value)}
+                      onChange={(e) => {
+                        setCountry(e.target.value);
+                        setCity("");
+                        setCommune("");
+                      }}
                       className="block w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
-                    />
+                    >
+                      <option value="">Sélectionnez votre pays</option>
+                      {ACTIVITY_COUNTRIES.map((activityCountry) => (
+                        <option key={activityCountry.name} value={activityCountry.name}>{activityCountry.label}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">Ville d'activité (Requis)</label>
                     <select
+                      required
                       value={city}
-                      onChange={(e) => setCity(e.target.value)}
+                      disabled={!country}
+                      onChange={(e) => {
+                        setCity(e.target.value);
+                        setCommune("");
+                      }}
                       className="block w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                     >
-                      <option value="Kinshasa">Kinshasa (RDC)</option>
-                      <option value="Lubumbashi">Lubumbashi (RDC)</option>
-                      <option value="Goma">Goma (RDC)</option>
-                      <option value="Kolwezi">Kolwezi (RDC)</option>
-                      <option value="Matadi">Matadi (RDC)</option>
-                      <option value="Bukavu">Bukavu (RDC)</option>
-                      <option value="Abidjan">Abidjan (Côte d'Ivoire)</option>
-                      <option value="Dakar">Dakar (Sénégal)</option>
-                      <option value="Douala">Douala (Cameroun)</option>
-                      <option value="Paris">Paris (France)</option>
+                      <option value="">Sélectionnez votre ville</option>
+                      {availableCities.map((activityCity) => (
+                        <option key={activityCity.name} value={activityCity.name}>{activityCity.name}</option>
+                      ))}
                     </select>
                   </div>
 
-                  <div>
+                  {selectedArea?.eligible && selectedArea.subdivisions && (
+                    <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">Commune (Requis)</label>
                     <select
                       required
@@ -622,12 +636,14 @@ export default function OnboardingPortal({
                       className="block w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500"
                     >
                       <option value="">Sélectionnez votre commune</option>
-                      {KINSHASA_COMMUNES.map((communeName) => (
+                      {selectedArea.subdivisions.map((communeName) => (
                         <option key={communeName} value={communeName}>{communeName}</option>
                       ))}
                     </select>
-                  </div>
+                    </div>
+                  )}
                 </div>
+                {isIneligibleArea && <p role="alert" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-medium text-amber-800">Vous n'êtes pas encore éligible pour le moment dans cette zone.</p>}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>

@@ -2,10 +2,10 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { CheckCircle2, Home, X } from "lucide-react";
 import { submitProperty, uploadPropertySubmissionImage } from "../lib/firebase";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
-import { KINSHASA_COMMUNES } from "../lib/kinshasaCommunes";
+import { ACTIVITY_COUNTRIES, citiesForCountry, cityForArea } from "../lib/geography";
 
 interface Props { isOpen: boolean; onClose: () => void; reporterName: string; reporterPhone: string; }
-const initial = { category: "Villa", reporterName: "", reporterPhone: "", country: "", province: "", commune: "", quartier: "", avenue: "" };
+const initial = { category: "Villa", reporterName: "", reporterPhone: "", country: "", city: "", province: "", commune: "", quartier: "", avenue: "" };
 
 export default function PropertySubmissionModal({ isOpen, onClose, reporterName, reporterPhone }: Props) {
   const [form, setForm] = useState(initial);
@@ -14,6 +14,8 @@ export default function PropertySubmissionModal({ isOpen, onClose, reporterName,
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const submissionRequestId = useRef<string | null>(null);
+  const availableCities = citiesForCountry(form.country);
+  const selectedArea = cityForArea(form.country, form.city);
   useEffect(() => {
     if (isOpen && !confirmed) {
       setForm((current) => ({
@@ -71,8 +73,10 @@ export default function PropertySubmissionModal({ isOpen, onClose, reporterName,
         {error && <p role="alert" className="break-words rounded-xl bg-red-50 p-3 text-xs text-red-700">{error}</p>}
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-xs font-semibold text-slate-600">Nom complet<input required readOnly value={form.reporterName} className="mt-1 block w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600" /></label>
-          {([["reporterPhone","Numéro WhatsApp"],["country","Pays"],["province","Province"],["quartier","Quartier"],["avenue","Avenue"]] as const).map(([key,label]) => <label key={key} className="text-xs font-semibold text-slate-600">{label}<input required type={key === "reporterPhone" ? "tel" : "text"} inputMode={key === "reporterPhone" ? "tel" : undefined} placeholder={key === "reporterPhone" ? "+243 857068014" : undefined} value={form[key]} onChange={(e) => setForm({ ...form, [key]: key === "reporterPhone" ? normalizePhoneInput(e.target.value) : e.target.value })} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" /></label>)}
-          <label className="text-xs font-semibold text-slate-600">Commune<select required value={form.commune} onChange={(e) => setForm({ ...form, commune: e.target.value })} className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"><option value="">Sélectionnez votre commune</option>{KINSHASA_COMMUNES.map((commune) => <option key={commune} value={commune}>{commune}</option>)}</select></label>
+          {([["reporterPhone","Numéro WhatsApp"],["province","Province"],["quartier","Quartier"],["avenue","Avenue"]] as const).map(([key,label]) => <label key={key} className="text-xs font-semibold text-slate-600">{label}<input required type={key === "reporterPhone" ? "tel" : "text"} inputMode={key === "reporterPhone" ? "tel" : undefined} placeholder={key === "reporterPhone" ? "+243 857068014" : undefined} value={form[key]} onChange={(e) => setForm({ ...form, [key]: key === "reporterPhone" ? normalizePhoneInput(e.target.value) : e.target.value })} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm" /></label>)}
+          <label className="text-xs font-semibold text-slate-600">Pays<select required value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value, city: "", commune: "" })} className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"><option value="">Sélectionnez votre pays</option>{ACTIVITY_COUNTRIES.map((country) => <option key={country.name} value={country.name}>{country.label}</option>)}</select></label>
+          <label className="text-xs font-semibold text-slate-600">Ville<select required value={form.city} disabled={!form.country} onChange={(e) => setForm({ ...form, city: e.target.value, commune: "" })} className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm disabled:bg-slate-100"><option value="">Sélectionnez votre ville</option>{availableCities.map((city) => <option key={city.name} value={city.name}>{city.name}</option>)}</select></label>
+          {selectedArea?.subdivisions && <label className="text-xs font-semibold text-slate-600">{selectedArea.subdivisionLabel || "Subdivision administrative"}<select required value={form.commune} onChange={(e) => setForm({ ...form, commune: e.target.value })} className="mt-1 block w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm"><option value="">Sélectionnez votre commune</option>{selectedArea.subdivisions.map((commune) => <option key={commune} value={commune}>{commune}</option>)}</select></label>}
           <label className="text-xs font-semibold text-slate-600">Catégorie<select value={form.category} onChange={(e) => setForm({...form,category:e.target.value})} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm">{["Villa","Terrain","Appartement","Studio","Bureau","Maison"].map(x=><option key={x}>{x}</option>)}</select></label>
         </div>
         <p className="text-[11px] text-slate-500">{internationalPhoneHint}</p>
