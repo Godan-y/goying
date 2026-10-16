@@ -768,14 +768,14 @@ export async function updateProfessionalProfile(
   session: UserSession,
   profile: {
     fullName: string; phone: string; country: string; city: string; commune: string; bio: string;
-    specialty: string; skills: string[]; priceRate: string; avatarUrl: string; portfolio: string[];
+    skills: string[]; priceRate: string; avatarUrl: string; portfolio: string[];
   },
   newPortfolioImages: File[] = [],
   newAvatarImage?: File,
 ) {
   const listing = session.providerListing;
   if (session.providerStatus !== "Confirmé") throw new Error("Votre dossier doit être approuvé avant toute modification du profil.");
-  if (!listing || ("vehicleModel" in listing)) {
+  if (!listing) {
     throw new Error("Ce profil prestataire ne peut pas être modifié.");
   }
   if (newPortfolioImages.length > 6) throw new Error("Vous pouvez ajouter au maximum 6 images de portfolio à la fois.");
@@ -785,16 +785,27 @@ export async function updateProfessionalProfile(
     newAvatarImage ? uploadProfessionalImages([newAvatarImage]) : Promise.resolve([]),
   ]);
   const portfolio = [...profile.portfolio, ...uploadedPortfolio].slice(0, 6);
-  const avatarUrl = uploadedAvatar[0] || profile.avatarUrl || listing.avatarUrl;
-  const isHousekeeper = "specialty" in listing && listing.specialty === "ménagère";
-  const listingUpdate = {
-    name: profile.fullName, phone: profile.phone, country: profile.country, city: profile.city,
-    commune: profile.commune, bio: profile.bio, specialty: profile.specialty, skills: profile.skills, priceRate: profile.priceRate,
-    ...(isHousekeeper ? { photo_profil: avatarUrl } : { avatarUrl }),
+  const existingProfilePhoto = listing.photo_profil || "";
+  const avatarUrl = uploadedAvatar[0] || profile.avatarUrl || existingProfilePhoto || listing.avatarUrl;
+  const { response, payload } = await authenticatedPost("/api/provider-profile", {
+    fullName: profile.fullName,
+    phone: profile.phone,
+    country: profile.country,
+    city: profile.city,
+    commune: profile.commune,
+    bio: profile.bio,
+    skills: profile.skills,
+    priceRate: profile.priceRate,
+    avatarUrl,
     portfolio,
+  });
+  if (!response.ok) {
+    throw new Error(apiErrorMessage(payload, "Impossible de mettre à jour le profil."));
+  }
+  return {
+    avatarUrl: typeof payload.avatarUrl === "string" ? payload.avatarUrl : avatarUrl,
+    portfolio: Array.isArray(payload.portfolio) ? payload.portfolio.map(String) : portfolio,
   };
-  await updateDoc(doc(db, providersCollection, listing.id), listingUpdate);
-  return { avatarUrl, portfolio };
 }
 
 export async function updateProviderAvailability(session: UserSession, providerAvailability: "disponible" | "indisponible") {

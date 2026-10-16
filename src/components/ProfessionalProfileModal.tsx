@@ -48,7 +48,9 @@ export default function ProfessionalProfileModal({
   const [priceRate, setPriceRate] = useState(String(listingData.priceRate || ""));
   const [portfolio, setPortfolio] = useState<string[]>(listingData.portfolio || []);
   const [newPortfolioImages, setNewPortfolioImages] = useState<File[]>([]);
-  const [avatarUrl, setAvatarUrl] = useState(listingData.avatarUrl || "");
+  const [avatarUrl, setAvatarUrl] = useState(
+    listingData.avatarUrl || String(listingRecord.photo_profil || "")
+  );
   const [newAvatarImage, setNewAvatarImage] = useState<File | undefined>();
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -146,18 +148,22 @@ export default function ProfessionalProfileModal({
     try {
       const normalizedSkills = skills.split(",").map((skill) => skill.trim()).filter(Boolean);
       const updatedProfile = await updateProfessionalProfile(session, {
-        fullName, phone: internationalPhone, country, city, commune, bio, specialty, skills: normalizedSkills, priceRate, avatarUrl,
+        fullName, phone: internationalPhone, country, city, commune, bio, skills: normalizedSkills, priceRate, avatarUrl,
         portfolio: portfolio.filter(Boolean),
       }, newPortfolioImages, newAvatarImage);
       onSaved({
         ...session,
         fullName,
         phone: internationalPhone,
-        specialty,
+        specialty: typeof listingRecord.specialty === "string"
+          ? listingRecord.specialty
+          : session.specialty,
         providerListing: {
           ...(listing || {}),
-          name: fullName, phone: internationalPhone, country, city, commune, bio, specialty, skills: normalizedSkills, priceRate,
+          name: fullName, phone: internationalPhone, country, city, commune, bio,
+          skills: normalizedSkills, priceRate,
           avatarUrl: updatedProfile.avatarUrl,
+          photo_profil: updatedProfile.avatarUrl,
           portfolio: updatedProfile.portfolio,
         } as UserSession["providerListing"],
       });

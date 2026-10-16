@@ -96,6 +96,7 @@ export interface Chauffeur {
   bio: string;
   verified: boolean;
   phone: string;
+  photo_profil?: string;
   managementMode: "admin" | "provider";
 }
 
@@ -104,6 +105,7 @@ export interface SecondaryProvider {
   name: string;
   specialty: "ménagère" | "coiffeur" | "professeur" | "maquilleuse";
   avatarUrl: string;
+  photo_profil?: string;
   rating: number;
   reviewsCount: number;
   priceRate: string;
