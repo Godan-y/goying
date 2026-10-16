@@ -34,7 +34,7 @@ git status --short
 Ajoutez ensuite seulement les fichiers source concernés, plutôt que d'utiliser `git add .`, puis créez et poussez le commit :
 
 ```powershell
-git add                
+git addpublic\.htaccess README.md              
 git commit -m "Description de mes modifications"
 git push
 ```
