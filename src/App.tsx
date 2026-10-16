@@ -50,6 +50,7 @@ import {
   AlertCircle,
   Clock,
   Heart,
+  MessageCircle,
   X
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -776,6 +777,19 @@ export default function App() {
       <AboutSection isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
       <TermsModal isOpen={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
       <SupportChatModal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
+      {!isSupportOpen && (
+        <button
+          type="button"
+          onClick={() => setIsSupportOpen(true)}
+          className={`fixed right-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-orange-600 text-white shadow-lg shadow-orange-600/30 transition-transform hover:scale-105 hover:bg-orange-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600 ${
+            showSubmissionPrompt ? "bottom-28" : "bottom-5"
+          }`}
+          aria-label="Ouvrir le support client"
+          title="Support client"
+        >
+          <MessageCircle className="h-7 w-7" aria-hidden="true" />
+        </button>
+      )}
       <PropertySubmissionModal
         isOpen={isPropertySubmissionOpen}
         onClose={() => setIsPropertySubmissionOpen(false)}
