@@ -559,6 +559,36 @@ async function authenticatedDelete(path: string) {
   return payload;
 }
 
+export interface ProfessionalPaymentStatus {
+  paymentStatus: string;
+  paymentVerificationRequested: boolean;
+}
+
+export async function getProfessionalPaymentStatus(): Promise<ProfessionalPaymentStatus> {
+  const { response, payload } = await authenticatedPost("/api/professional-payment-status", {});
+  if (!response.ok) {
+    throw new Error(apiErrorMessage(payload, "Impossible de charger le statut du paiement."));
+  }
+  return {
+    paymentStatus: String(payload.paymentStatus || "À vérifier manuellement"),
+    paymentVerificationRequested: Boolean(payload.paymentVerificationRequestedAt),
+  };
+}
+
+export async function requestProfessionalPaymentVerification(): Promise<ProfessionalPaymentStatus> {
+  const { response, payload } = await authenticatedPost(
+    "/api/professional-payment-verification-requests",
+    {},
+  );
+  if (!response.ok) {
+    throw new Error(apiErrorMessage(payload, "Impossible d'envoyer la demande de vérification."));
+  }
+  return {
+    paymentStatus: String(payload.paymentStatus || "Vérification demandée"),
+    paymentVerificationRequested: Boolean(payload.paymentVerificationRequestedAt),
+  };
+}
+
 async function getProfessionalSessionFromApi(session: UserSession): Promise<UserSession | null> {
   const { response, payload } = await authenticatedPost("/api/professional-session", {});
   if (!response.ok) return null;

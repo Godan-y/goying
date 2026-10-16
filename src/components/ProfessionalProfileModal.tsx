@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react";
-import { ClipboardCheck, CircleAlert, Power, Upload, UserRound, X, Trash2 } from "lucide-react";
+import { ClipboardCheck, CircleAlert, CreditCard, Power, Upload, UserRound, X, Trash2 } from "lucide-react";
 import { Booking, Chauffeur, SecondaryProvider, UserSession } from "../types";
-import { getProviderBookings, requestProviderCompletion, updateProfessionalProfile, updateProviderAvailability } from "../lib/firebase";
+import {
+  getProfessionalPaymentStatus,
+  getProviderBookings,
+  requestProfessionalPaymentVerification,
+  requestProviderCompletion,
+  updateProfessionalProfile,
+  updateProviderAvailability,
+} from "../lib/firebase";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
 import { ACTIVITY_COUNTRIES, citiesForCountry, cityForArea, isKnownSubdivision } from "../lib/geography";
 import { Lightbox } from "./Lightbox";
@@ -51,6 +58,9 @@ export default function ProfessionalProfileModal({
   const [requestingCompletionId, setRequestingCompletionId] = useState<string | null>(null);
   const [lightbox, setLightbox] = useState<{ images: string[]; index?: number; alt: string } | null>(null);
   const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false);
+  const [hasReportedPayment, setHasReportedPayment] = useState(false);
+  const [isLoadingPaymentStatus, setIsLoadingPaymentStatus] = useState(false);
+  const [isRequestingPaymentVerification, setIsRequestingPaymentVerification] = useState(false);
   const [providerAvailability, setProviderAvailability] = useState<"disponible" | "indisponible">(
     listingData.providerAvailability === "indisponible" ? "indisponible" : "disponible"
   );
@@ -74,6 +84,24 @@ export default function ProfessionalProfileModal({
       })
       .finally(() => setIsMissionsLoading(false));
   }, [hasAvailabilityControl, isApproved, isOpen, listing?.id]);
+
+  useEffect(() => {
+    if (!isOpen || isApproved || isRejected) return;
+    let active = true;
+    setIsLoadingPaymentStatus(true);
+    void getProfessionalPaymentStatus()
+      .then((payment) => {
+        if (active) setHasReportedPayment(payment.paymentVerificationRequested);
+      })
+      .catch((paymentError) => {
+        console.error("Unable to load provider payment status:", paymentError);
+        if (active) setError("Impossible de vérifier le statut de votre paiement pour le moment.");
+      })
+      .finally(() => {
+        if (active) setIsLoadingPaymentStatus(false);
+      });
+    return () => { active = false; };
+  }, [isApproved, isOpen, isRejected]);
 
   if (!isOpen) return null;
   if (isRejected) {
@@ -178,6 +206,21 @@ export default function ProfessionalProfileModal({
     }
   };
 
+  const requestPaymentVerification = async () => {
+    setIsRequestingPaymentVerification(true);
+    setError("");
+    try {
+      const payment = await requestProfessionalPaymentVerification();
+      setHasReportedPayment(payment.paymentVerificationRequested);
+    } catch (paymentError) {
+      setError(paymentError instanceof Error
+        ? paymentError.message
+        : "Impossible d'envoyer la demande de vérification.");
+    } finally {
+      setIsRequestingPaymentVerification(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/60" onClick={onClose} />
@@ -192,9 +235,34 @@ export default function ProfessionalProfileModal({
             : "Votre dossier est en attente de validation. Vous pourrez modifier votre profil après son approbation par l'équipe Goying."}
         </p>
         {!isApproved && !isRejected && (
-          <p className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-semibold leading-relaxed text-red-700">
-            Important : si les frais de traitement ne sont pas payés dans les deux jours suivant la soumission, votre dossier sera rejeté.
-          </p>
+          <section className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <div className="flex items-start gap-2">
+              <CreditCard className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+              <div>
+                <h3 className="text-sm font-bold text-amber-950">Frais de traitement : 10 000 FC</h3>
+                <p className="mt-1 text-xs leading-relaxed text-amber-900">
+                  Payez avec le même nom complet et le même numéro WhatsApp que dans votre dossier.
+                </p>
+              </div>
+            </div>
+            {hasReportedPayment ? (
+              <p role="status" className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold leading-relaxed text-emerald-800">
+                Votre demande a été transmise à Goying. Si vous avez déjà payé, veuillez patienter : votre profil sera approuvé après la vérification manuelle du paiement.
+              </p>
+            ) : (
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <a href="https://vceccwzb.mychariow.shop/prd_w26ss0yl" className="inline-flex min-h-11 flex-1 items-center justify-center rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-orange-500">
+                  Payer avec Chariow
+                </a>
+                <button type="button" disabled={isLoadingPaymentStatus || isRequestingPaymentVerification} onClick={() => void requestPaymentVerification()} className="min-h-11 rounded-xl border border-amber-300 bg-white px-4 py-2.5 text-sm font-bold text-amber-900 hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60">
+                  {isRequestingPaymentVerification ? "Envoi en cours..." : "J'ai déjà payé"}
+                </button>
+              </div>
+            )}
+            <p className="mt-3 text-xs font-semibold leading-relaxed text-red-700">
+              Important : si les frais de traitement ne sont pas payés dans les deux jours suivant la soumission, votre dossier sera rejeté.
+            </p>
+          </section>
         )}
         {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-xs text-red-700">{error}</p>}
         {isApproved && hasAvailabilityControl && (
