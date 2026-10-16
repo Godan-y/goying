@@ -351,17 +351,27 @@ export async function getProviders(): Promise<SecondaryProvider[]> {
     let providerEntries: FirestoreRecord[];
     if (response.status === 404) {
       const pythonResponse = await fetch(apiUrl("/prestataires/api/public"));
-      const pythonPayload = await pythonResponse.json() as { prestataires?: FirestoreRecord[]; error?: string };
-      if (!pythonResponse.ok || !pythonPayload.prestataires) {
+      const pythonPayload = await pythonResponse.json() as {
+        providers?: FirestoreRecord[];
+        prestataires?: FirestoreRecord[];
+        error?: string;
+      };
+      const entries = pythonPayload.providers ?? pythonPayload.prestataires;
+      if (!pythonResponse.ok || !Array.isArray(entries)) {
         throw new Error(pythonPayload.error || "Le catalogue des prestataires est momentanément indisponible.");
       }
-      providerEntries = pythonPayload.prestataires;
+      providerEntries = entries;
     } else {
-      const payload = await response.json() as { providers?: FirestoreRecord[]; error?: string };
-      if (!response.ok || !payload.providers) {
+      const payload = await response.json() as {
+        providers?: FirestoreRecord[];
+        prestataires?: FirestoreRecord[];
+        error?: string;
+      };
+      const entries = payload.providers ?? payload.prestataires;
+      if (!response.ok || !Array.isArray(entries)) {
         throw new Error(payload.error || "Le catalogue des prestataires est momentanément indisponible.");
       }
-      providerEntries = payload.providers;
+      providerEntries = entries;
     }
     if (providerEntries.length === 0) {
       return initialSecondaryProviders;
@@ -384,7 +394,7 @@ export async function getProviders(): Promise<SecondaryProvider[]> {
         .filter(Boolean);
       const provider = {
         ...data,
-        id: String(data.id),
+        id: String(data.id || data.documentId || data.providerId || ""),
         specialty,
         avatarUrl: specialty === "ménagère"
           ? s3ProfilePhotoUrl(data.photo_profil)
@@ -407,7 +417,7 @@ export async function getProviders(): Promise<SecondaryProvider[]> {
         providerAvailability: data.providerAvailability === "indisponible" || data.availability === "indisponible"
           ? "indisponible" : "disponible",
       } as SecondaryProvider;
-      if (data.verified === true || data.verified === "true") providers.push(provider);
+      if (provider.id && (data.verified === true || data.verified === "true")) providers.push(provider);
     });
     return providers;
   } catch (error) {
