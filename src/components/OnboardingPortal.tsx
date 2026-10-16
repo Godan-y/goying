@@ -76,7 +76,7 @@ export default function OnboardingPortal({
   const [housekeeperPriceNegotiable, setHousekeeperPriceNegotiable] = useState(false);
 
   const [portfolioImages, setPortfolioImages] = useState<File[]>([]);
-  const [hairdresserPrice, setHairdresserPrice] = useState(25);
+  const [hairdresserPrice, setHairdresserPrice] = useState("");
   const [hairdresserPriceNegotiable, setHairdresserPriceNegotiable] = useState(false);
   const [hairdresserSkills, setHairdresserSkills] = useState("");
 
@@ -174,6 +174,10 @@ export default function OnboardingPortal({
       setSubmitError("Vous n'êtes pas encore éligible pour le moment dans cette zone.");
       return;
     }
+    if (selectedSpecialty === "coiffeur" && (!/^\d+$/.test(hairdresserPrice) || Number(hairdresserPrice) <= 0)) {
+      setSubmitError("Indiquez un tarif entier supérieur à 0 pour une coupe.");
+      return;
+    }
     const internationalPhone = toInternationalPhone(phone);
     if (!internationalPhone) {
       setSubmitError(`Numéro WhatsApp invalide. ${internationalPhoneHint}`);
@@ -191,6 +195,7 @@ export default function OnboardingPortal({
     };
 
     const parsedExperienceYears = Number(experienceYears);
+    const parsedHairdresserPrice = Number(hairdresserPrice);
     let newDriver: Chauffeur | undefined;
     let newServiceProv: SecondaryProvider | undefined;
 
@@ -238,7 +243,7 @@ export default function OnboardingPortal({
           skills = skillsFromInput(housekeeperSkills, ["Ménage", "Repassage", "Entretien quotidien"]);
           break;
         case "coiffeur":
-          priceRate = `à partir de $${hairdresserPrice}`;
+          priceRate = `à partir de $${parsedHairdresserPrice}`;
           skills = skillsFromInput(hairdresserSkills, ["Brushing", "Coiffure à domicile", "Soins"]);
           break;
         case "maquilleuse":
@@ -850,15 +855,21 @@ export default function OnboardingPortal({
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase mb-1.5">
-                      Tarif de base estimé pour une coupe (EUR)
+                      Tarif de base estimé pour une coupe (USD)
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       required
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      aria-describedby="hairdresser-price-help"
                       value={hairdresserPrice}
-                      onChange={(e) => setHairdresserPrice(parseInt(e.target.value) || 0)}
+                      onChange={(e) => setHairdresserPrice(e.target.value)}
                       className="block w-full rounded-xl border border-slate-200 bg-white py-2 px-3 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
                     />
+                    <p id="hairdresser-price-help" className="mt-1 text-[11px] text-slate-500">
+                      Saisissez un montant entier en dollars.
+                    </p>
                   </div>
 
                   <label className="flex items-center gap-2 text-sm text-slate-700">
