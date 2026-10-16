@@ -695,19 +695,39 @@ export async function requestProviderCompletion(bookingId: string, providerId: s
   if (!response.ok) throw new Error(String(payload.error || payload.detail || "La fin de prestation n'a pas pu être signalée."));
 }
 
-async function uploadProfessionalImages(images: File[], uploadType: "portfolio" | "avatar"): Promise<string[]> {
+async function uploadProfessionalImages(images: File[]): Promise<string[]> {
   if (images.length === 0) return [];
+  for (const image of images) {
+    if (!image.name || !["image/jpeg", "image/png", "image/webp"].includes(image.type)) {
+      throw new Error("Choisissez une image JPEG, PNG ou WebP.");
+    }
+    if (image.size === 0 || image.size > 5 * 1024 * 1024) {
+      throw new Error("Chaque image doit faire au maximum 5 Mo.");
+    }
+  }
   const { response, payload } = await authenticatedPost("/api/portfolio-uploads", {
-    uploadType,
-    images: images.map((image) => ({ contentType: image.type })),
+    files: images.map((image) => ({
+      fileName: image.name,
+      contentType: image.type,
+      fileSize: image.size,
+    })),
   });
-  const uploads = payload.uploads as Array<{ url: string; fields: Record<string, string>; publicUrl: string }> | undefined;
-  if (!response.ok || !uploads) throw new Error(String(payload.error || payload.detail || "Impossible de préparer l'envoi des images."));
+  const uploads = payload.uploads as Array<{
+    uploadUrl: string;
+    publicUrl: string;
+    method: "PUT";
+    headers: Record<string, string>;
+  }> | undefined;
+  if (!response.ok || !uploads || uploads.length !== images.length) {
+    throw new Error(apiErrorMessage(payload, "Impossible de préparer l'envoi des images."));
+  }
   await Promise.all(uploads.map(async (upload, index) => {
-    const form = new FormData();
-    Object.entries(upload.fields).forEach(([key, value]) => form.append(key, value));
-    form.append("file", images[index]);
-    if (!(await fetch(upload.url, { method: "POST", body: form })).ok) {
+    const uploadResponse = await fetch(upload.uploadUrl, {
+      method: upload.method,
+      headers: upload.headers,
+      body: images[index],
+    });
+    if (!uploadResponse.ok) {
       throw new Error("Impossible d'envoyer une image vers le stockage.");
     }
   }));
@@ -731,8 +751,8 @@ export async function updateProfessionalProfile(
   if (newPortfolioImages.length > 6) throw new Error("Vous pouvez ajouter au maximum 6 images de portfolio à la fois.");
 
   const [uploadedPortfolio, uploadedAvatar] = await Promise.all([
-    uploadProfessionalImages(newPortfolioImages, "portfolio"),
-    newAvatarImage ? uploadProfessionalImages([newAvatarImage], "avatar") : Promise.resolve([]),
+    uploadProfessionalImages(newPortfolioImages),
+    newAvatarImage ? uploadProfessionalImages([newAvatarImage]) : Promise.resolve([]),
   ]);
   const portfolio = [...profile.portfolio, ...uploadedPortfolio].slice(0, 6);
   const avatarUrl = uploadedAvatar[0] || profile.avatarUrl || listing.avatarUrl;
