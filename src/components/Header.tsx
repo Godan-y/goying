@@ -30,7 +30,14 @@ function providerSpecialtyLabel(specialty?: string): string {
     maquilleuse: "Maquilleuse / Make-up",
     professeur: "Professeur à domicile",
   };
-  return normalized ? labels[normalized] || specialty!.trim() : "Prestataire";
+  return normalized ? labels[normalized] || "Prestataire" : "Prestataire";
+}
+
+function readableText(value?: string): string | undefined {
+  const normalized = value?.trim();
+  return normalized && !["undefined", "null"].includes(normalized.toLowerCase())
+    ? normalized
+    : undefined;
 }
 
 export default function Header({
@@ -47,6 +54,9 @@ export default function Header({
 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const specialtyLabel = providerSpecialtyLabel(session.specialty);
+  const accountName = readableText(session.fullName)
+    || readableText(session.providerListing?.name)
+    || "Compte prestataire";
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 w-full border-b border-slate-100 bg-white/95 backdrop-blur-md">
@@ -104,7 +114,7 @@ export default function Header({
             <div className="ml-0.5 flex shrink-0 items-center gap-1.5 border-l border-slate-100 pl-2 xl:ml-1 xl:gap-2 xl:pl-3">
               <div className="flex min-w-0 max-w-20 flex-col text-right xl:max-w-36">
                 <span className="truncate text-[11px] font-semibold text-slate-800 xl:text-xs">
-                  {session.fullName}
+                  {accountName}
                 </span>
                 <span className="truncate text-[9px] text-slate-500 capitalize xl:text-[10px]">
                   {session.role === "prestataire"
@@ -211,9 +221,11 @@ export default function Header({
                 <div className="mt-2 pt-4 border-t border-slate-100 space-y-3">
                   <div className="px-4 py-2 rounded-xl bg-slate-50 flex items-center justify-between">
                     <div>
-                      <div className="text-xs font-semibold text-slate-800">{session.fullName}</div>
+                      <div className="text-xs font-semibold text-slate-800">{accountName}</div>
                       <div className="text-[10px] text-slate-500 capitalize">
-                        {session.role === "prestataire" ? `Prestataire : ${specialtyLabel}` : "Client"}
+                        {session.role === "prestataire"
+                          ? `${specialtyLabel} · ${session.providerStatus || "En attente"}`
+                          : "Client"}
                       </div>
                     </div>
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
