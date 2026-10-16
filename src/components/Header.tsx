@@ -17,6 +17,22 @@ interface HeaderProps {
   onOpenPropertySubmission: () => void;
 }
 
+function providerSpecialtyLabel(specialty?: string): string {
+  const normalized = specialty
+    ?.trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  const labels: Record<string, string> = {
+    chauffeur: "Chauffeur",
+    menagere: "Ménager / Ménagère",
+    coiffeur: "Coiffeur / Coiffeuse",
+    maquilleuse: "Maquilleuse / Make-up",
+    professeur: "Professeur à domicile",
+  };
+  return normalized ? labels[normalized] || specialty!.trim() : "Prestataire";
+}
+
 export default function Header({
   session,
   bookings,
@@ -30,6 +46,7 @@ export default function Header({
   onOpenPropertySubmission,
 }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const specialtyLabel = providerSpecialtyLabel(session.specialty);
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 w-full border-b border-slate-100 bg-white/95 backdrop-blur-md">
@@ -91,7 +108,7 @@ export default function Header({
                 </span>
                 <span className="truncate text-[9px] text-slate-500 capitalize xl:text-[10px]">
                   {session.role === "prestataire"
-                    ? `${session.specialty} · ${session.providerStatus || "En attente"}`
+                    ? `${specialtyLabel} · ${session.providerStatus || "En attente"}`
                     : "Client"}
                 </span>
               </div>
@@ -196,7 +213,7 @@ export default function Header({
                     <div>
                       <div className="text-xs font-semibold text-slate-800">{session.fullName}</div>
                       <div className="text-[10px] text-slate-500 capitalize">
-                        {session.role === "prestataire" ? `Pro: ${session.specialty}` : "Client"}
+                        {session.role === "prestataire" ? `Prestataire : ${specialtyLabel}` : "Client"}
                       </div>
                     </div>
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-600">
