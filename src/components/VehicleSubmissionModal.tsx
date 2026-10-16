@@ -9,6 +9,7 @@ interface VehicleSubmissionModalProps {
   isOpen: boolean;
   onClose: () => void;
   session: UserSession;
+  onNotify: (message: string) => void;
 }
 
 const initialForm = {
@@ -20,7 +21,7 @@ const initialForm = {
   consent: false,
 };
 
-export default function VehicleSubmissionModal({ isOpen, onClose, session }: VehicleSubmissionModalProps) {
+export default function VehicleSubmissionModal({ isOpen, onClose, session, onNotify }: VehicleSubmissionModalProps) {
   const [form, setForm] = useState(initialForm);
   const [photos, setPhotos] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -72,6 +73,7 @@ export default function VehicleSubmissionModal({ isOpen, onClose, session }: Veh
       const photoUrls = await Promise.all(photos.map(uploadVehicleSubmissionImage));
       await submitVehicle({ ...form, ownerPhone, photoUrls, submissionRequestId: requestId.current });
       setSubmitted(true);
+      onNotify("Votre demande de véhicule a été envoyée avec succès.");
     } catch (submissionError) {
       setError(submissionError instanceof Error ? submissionError.message : "La demande n'a pas pu être envoyée.");
     } finally {

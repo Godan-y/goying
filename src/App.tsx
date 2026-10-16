@@ -307,6 +307,8 @@ export default function App() {
   ) => {
     // Save to Firestore
     await onboardProfessional(newSession, password || "", newDriver, newServiceProv);
+    setBookingToast("Votre dossier prestataire a été enregistré.");
+    window.setTimeout(() => setBookingToast(null), 4000);
   };
 
   const handleCommissionnaireClick = () => {
@@ -318,6 +320,11 @@ export default function App() {
 
   const handleSplashComplete = useCallback(() => {
     setIsSplashVisible(false);
+  }, []);
+
+  const showToast = useCallback((message: string) => {
+    setBookingToast(message);
+    window.setTimeout(() => setBookingToast(null), 4000);
   }, []);
 
   if (isSplashVisible) {
@@ -795,9 +802,10 @@ export default function App() {
         onClose={() => setIsPropertySubmissionOpen(false)}
         reporterName={session.fullName}
         reporterPhone={session.phone || ""}
+        onNotify={showToast}
       />
       <PartnershipModal isOpen={isPartnershipOpen} onClose={() => setIsPartnershipOpen(false)} />
-      <VehicleSubmissionModal isOpen={isVehicleSubmissionOpen} onClose={() => setIsVehicleSubmissionOpen(false)} session={session} />
+      <VehicleSubmissionModal isOpen={isVehicleSubmissionOpen} onClose={() => setIsVehicleSubmissionOpen(false)} session={session} onNotify={showToast} />
       {showSubmissionPrompt && !isPropertySubmissionOpen && (
         <div className="fixed bottom-5 right-5 z-40 max-w-xs rounded-2xl border border-orange-100 bg-white p-4 shadow-xl">
           <button aria-label="Fermer" onClick={() => setShowSubmissionPrompt(false)} className="absolute right-2 top-2 text-slate-400"><X className="h-4 w-4" /></button>
@@ -811,6 +819,7 @@ export default function App() {
         isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
         onLoginSuccess={(newSession) => setSession(newSession)}
+        onNotify={showToast}
         onOpenOnboarding={() => {
           setIsLoginOpen(false);
           setActiveView("onboarding-pro");
@@ -834,6 +843,7 @@ export default function App() {
         session={session}
         onClose={() => setIsProfessionalProfileOpen(false)}
         onSaved={setSession}
+        onNotify={showToast}
       />
     </div>
   );

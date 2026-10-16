@@ -14,6 +14,7 @@ interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLoginSuccess: (session: UserSession) => void;
+  onNotify: (message: string) => void;
   onOpenOnboarding: () => void;
 }
 
@@ -48,6 +49,7 @@ export default function LoginModal({
   isOpen,
   onClose,
   onLoginSuccess,
+  onNotify,
   onOpenOnboarding,
 }: LoginModalProps) {
   const [isRegister, setIsRegister] = useState(false);
@@ -88,15 +90,18 @@ export default function LoginModal({
       if (loginMode === "prestataire") {
         const providerSession = await loginProfessional(email, password);
         onLoginSuccess(providerSession);
+        onNotify("Connexion prestataire réussie.");
         onClose();
       } else if (isRegister) {
         const formattedName = fullName.charAt(0).toUpperCase() + fullName.slice(1);
         const newSession = await registerClient(formattedName, email, password, internationalPhone!);
         onLoginSuccess(newSession);
+        onNotify("Votre compte client a été créé avec succès.");
         onClose();
       } else {
         const existingSession = await loginClient(email, password);
         onLoginSuccess(existingSession);
+        onNotify("Connexion réussie.");
         onClose();
       }
     } catch (err) {
@@ -114,6 +119,7 @@ export default function LoginModal({
     try {
       const clientSession = await loginWithGoogleClient();
       onLoginSuccess(clientSession);
+      onNotify("Connexion Google réussie.");
       onClose();
     } catch (err) {
       console.error("Google client login failed:", err);

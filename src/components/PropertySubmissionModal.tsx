@@ -4,10 +4,10 @@ import { submitProperty, uploadPropertySubmissionImage } from "../lib/firebase";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
 import { ACTIVITY_COUNTRIES, citiesForCountry, cityForArea } from "../lib/geography";
 
-interface Props { isOpen: boolean; onClose: () => void; reporterName: string; reporterPhone: string; }
+interface Props { isOpen: boolean; onClose: () => void; reporterName: string; reporterPhone: string; onNotify: (message: string) => void; }
 const initial = { category: "Villa", reporterName: "", reporterPhone: "", country: "", city: "", province: "", commune: "", quartier: "", avenue: "" };
 
-export default function PropertySubmissionModal({ isOpen, onClose, reporterName, reporterPhone }: Props) {
+export default function PropertySubmissionModal({ isOpen, onClose, reporterName, reporterPhone, onNotify }: Props) {
   const [form, setForm] = useState(initial);
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
   const [error, setError] = useState("");
@@ -53,6 +53,7 @@ export default function PropertySubmissionModal({ isOpen, onClose, reporterName,
       const referencePhotoUrl = await uploadPropertySubmissionImage(referenceImage);
       await submitProperty({ ...form, reporterPhone: internationalPhone, referencePhotoUrl, submissionRequestId: submissionRequestId.current });
       setConfirmed(true);
+      onNotify("Votre maison a été soumise avec succès.");
       setForm(initial);
       setReferenceImage(null);
     } catch (err) {

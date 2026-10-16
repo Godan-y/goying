@@ -18,6 +18,7 @@ interface ProfessionalProfileModalProps {
   session: UserSession;
   onClose: () => void;
   onSaved: (session: UserSession) => void;
+  onNotify: (message: string) => void;
 }
 
 function hasPersonalAvailabilityControl(listing: Partial<SecondaryProvider | Chauffeur> | undefined) {
@@ -29,6 +30,7 @@ export default function ProfessionalProfileModal({
   session,
   onClose,
   onSaved,
+  onNotify,
 }: ProfessionalProfileModalProps) {
   const listing = session.providerListing;
   const isApproved = session.providerStatus === "Confirmé";
@@ -167,6 +169,7 @@ export default function ProfessionalProfileModal({
           portfolio: updatedProfile.portfolio,
         } as UserSession["providerListing"],
       });
+      onNotify("Votre profil prestataire a été mis à jour.");
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Impossible de mettre à jour le profil.");
@@ -218,6 +221,7 @@ export default function ProfessionalProfileModal({
     try {
       const payment = await requestProfessionalPaymentVerification();
       setHasReportedPayment(payment.paymentVerificationRequested);
+      onNotify("Votre demande de vérification de paiement a été envoyée.");
     } catch (paymentError) {
       setError(paymentError instanceof Error
         ? paymentError.message
