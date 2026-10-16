@@ -15,10 +15,10 @@ interface ChatMessage {
 
 const quickQuestions = [
   "Réserver une maison",
-  "Créer un compte ou se connecter",
-  "Soumettre une maison",
-  "Suivre ma réservation",
-  "Contacter l'équipe",
+  "Devenir prestataire et payer",
+  "Zones disponibles pour les prestataires",
+  "Photo de profil prestataire",
+  "Suivre ou supprimer ma réservation",
 ];
 
 function normalizeText(value: string) {
@@ -31,6 +31,15 @@ function normalizeText(value: string) {
 function getSupportResponse(question: string) {
   const text = normalizeText(question);
 
+  if (/(chariow|payer|paiement|deja paye|verification paiement|10000|10 000)/.test(text)) {
+    return "Après l'envoi de votre dossier prestataire, les frais de traitement de 10 000 FC et le bouton « Payer avec Chariow » apparaissent. Payez avec le même nom et numéro WhatsApp que dans votre dossier. Si vous avez déjà payé, ouvrez « Mon profil », choisissez « J'ai déjà payé » : Goying recevra une demande de vérification. Votre profil reste en attente jusqu'à la vérification manuelle du paiement.";
+  }
+  if (/(zone|pays|ville|commune|goma|kinshasa|lubumbashi|kolwezi|matadi|bukavu|eligible)/.test(text)) {
+    return "Les inscriptions prestataires sont actuellement ouvertes en RDC : Kinshasa, Lubumbashi, Goma, Kolwezi, Matadi et Bukavu. Choisissez d'abord le pays, puis la ville et sa commune correspondante. Les autres zones affichent « Vous n'êtes pas encore éligible pour le moment dans cette zone » et ne permettent pas d'envoyer le dossier.";
+  }
+  if (/(photo|portfolio|image|avatar)/.test(text)) {
+    return "Après l'approbation de votre dossier, ouvrez « Mon profil » pour ajouter une photo de profil et, selon le métier, un portfolio. Seuls les fichiers JPEG, PNG ou WebP de 5 Mo maximum sont acceptés. Le portfolio est limité à 6 images.";
+  }
   if (/(compte|connexion|connecter|mot de passe|google|email)/.test(text)) {
     return "Utilisez « Se connecter » en haut de la page. Les clients peuvent créer un compte avec leur nom, e-mail et mot de passe, ou continuer avec Google. Si vous avez oublié votre mot de passe, choisissez « Réinitialiser le mot de passe » dans la fenêtre de connexion.";
   }
@@ -44,10 +53,10 @@ function getSupportResponse(question: string) {
     return "Pour joindre l'équipe Goying, utilisez le support de l'application ou WhatsApp au +243 973199473. Précisez votre nom et le sujet de votre demande afin que nous puissions vous orienter.";
   }
   if (/(reserver|reservation|suivi|annul|mission|statut)/.test(text)) {
-    return "Ouvrez le service souhaité, choisissez une offre puis remplissez le formulaire de demande. Vous pouvez suivre vos demandes depuis « Mes Réservations ». Une réservation terminée peut ensuite être évaluée lorsque son statut est « Terminé ».";
+    return "Ouvrez le service souhaité, choisissez une offre puis remplissez le formulaire de demande. Vous pouvez suivre vos demandes depuis « Mes Réservations ». Vous pouvez aussi demander la suppression d'une réservation selon son état. Une réservation terminée peut ensuite être évaluée lorsque son statut est « Terminé ».";
   }
   if (/(prestataire|coiffeur|maquille|professeur|devenir pro|dossier)/.test(text)) {
-    return "Pour devenir prestataire, ouvrez « Devenir prestataire » et remplissez votre dossier. Les profils autonomes validés peuvent compléter leur profil, ajouter une photo et un portfolio. Les candidatures Chauffeur et Ménager/Ménagère sont traitées par l'administration.";
+    return "Pour devenir prestataire, ouvrez « Devenir prestataire » et remplissez votre dossier. Choisissez votre pays, votre ville et la commune proposée, puis réglez les frais Chariow de 10 000 FC. Le dossier reste en attente jusqu'à l'approbation manuelle de Goying. Une fois validé, vous pouvez compléter votre profil, ajouter votre photo et votre portfolio.";
   }
   if (/(chauffeur|menager|menagere)/.test(text)) {
     return "Les chauffeurs et ménagers/ménagères sont ajoutés et gérés par l'administration. Pour postuler à l'un de ces postes, écrivez au +243 973199473 en précisant le poste souhaité.";
@@ -58,11 +67,7 @@ function getSupportResponse(question: string) {
   if (/(avis|etoile|note|evaluer)/.test(text)) {
     return "Après la fin d'une prestation et sa validation par l'administration, le bouton « Évaluer ce prestataire » apparaît dans votre suivi. Vous pouvez attribuer de 1 à 5 étoiles et ajouter un commentaire facultatif.";
   }
-  if (/(portfolio|photo|profil|image)/.test(text)) {
-    return "Les prestataires validés peuvent ajouter une photo de profil et, pour les métiers concernés, de 1 à 6 images de portfolio. Les formats acceptés sont JPEG, PNG et WebP, dans la limite de 5 Mo par image.";
-  }
-
-  return "Je peux vous guider sur les comptes, les réservations, les locations de voiture, les prestataires, les portfolios et les avis. Essayez par exemple : « Comment réserver un service ? »";
+  return "Je peux vous guider sur les comptes, les réservations, les locations de voiture, les inscriptions prestataires, les zones disponibles, le paiement Chariow, les photos de profil, les portfolios et les avis. Essayez par exemple : « Comment payer mon dossier prestataire ? »";
 }
 
 export default function SupportChatModal({ isOpen, onClose }: SupportChatModalProps) {
