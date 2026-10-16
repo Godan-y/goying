@@ -34,10 +34,16 @@ git status --short
 Ajoutez ensuite seulement les fichiers source concernés, plutôt que d'utiliser `git add .`, puis créez et poussez le commit :
 
 ```powershell
-git add chemin\vers\le\fichier-modifie
+git add                
 git commit -m "Description de mes modifications"
 git push
 ```
+
+## URL canonique et redirections
+
+Le site public utilise l'URL canonique `https://www.goyingservices.com/`. Le fichier [`public/.htaccess`](./public/.htaccess) force une redirection permanente unique de HTTP et de `https://goyingservices.com` vers cette URL.
+
+Lors du déploiement sur l'hébergement LiteSpeed, copiez aussi le fichier caché `.htaccess` à la racine web, au même niveau que `index.html`. Vérifiez ensuite les quatre URL (`http`/`https`, avec et sans `www`) : elles doivent toutes finir sur `https://www.goyingservices.com/`.
 
 ## Numéros WhatsApp
 

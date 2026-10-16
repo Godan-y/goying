@@ -1,0 +1,6 @@
+RewriteEngine On
+
+# Serve a single canonical HTTPS host to avoid duplicate home pages.
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} ^goyingservices\.com$ [NC]
+RewriteRule ^ https://www.goyingservices.com%{REQUEST_URI} [R=301,L]
