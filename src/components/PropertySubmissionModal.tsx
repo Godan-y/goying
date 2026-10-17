@@ -3,16 +3,18 @@ import { CheckCircle2, Home, X } from "lucide-react";
 import { submitProperty, uploadPropertySubmissionImage } from "../lib/firebase";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
 import { ACTIVITY_COUNTRIES, citiesForCountry, cityForArea } from "../lib/geography";
+import { POLICY_VERSION } from "./PoliciesModal";
 
-interface Props { isOpen: boolean; onClose: () => void; reporterName: string; reporterPhone: string; onNotify: (message: string) => void; }
+interface Props { isOpen: boolean; onClose: () => void; reporterName: string; reporterPhone: string; onNotify: (message: string) => void; onOpenPolicy: () => void; }
 const initial = { category: "Villa", reporterName: "", reporterPhone: "", country: "", city: "", province: "", commune: "", quartier: "", avenue: "" };
 
-export default function PropertySubmissionModal({ isOpen, onClose, reporterName, reporterPhone, onNotify }: Props) {
+export default function PropertySubmissionModal({ isOpen, onClose, reporterName, reporterPhone, onNotify, onOpenPolicy }: Props) {
   const [form, setForm] = useState(initial);
   const [referenceImage, setReferenceImage] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [acceptedPolicy, setAcceptedPolicy] = useState(false);
   const submissionRequestId = useRef<string | null>(null);
   const availableCities = citiesForCountry(form.country);
   const selectedArea = cityForArea(form.country, form.city);
@@ -47,11 +49,15 @@ export default function PropertySubmissionModal({ isOpen, onClose, reporterName,
       setError("Ajoutez une photo de référence de la maison.");
       return;
     }
+    if (!acceptedPolicy) {
+      setError("Vous devez accepter la politique applicable aux maisons.");
+      return;
+    }
     setSubmitting(true); setError("");
     try {
       submissionRequestId.current ??= crypto.randomUUID();
       const referencePhotoUrl = await uploadPropertySubmissionImage(referenceImage);
-      await submitProperty({ ...form, reporterPhone: internationalPhone, referencePhotoUrl, submissionRequestId: submissionRequestId.current });
+      await submitProperty({ ...form, reporterPhone: internationalPhone, referencePhotoUrl, submissionRequestId: submissionRequestId.current, policyAcceptance: { version: POLICY_VERSION, acceptedAt: new Date().toISOString(), policy: "property-submission" } });
       setConfirmed(true);
       onNotify("Votre maison a été soumise avec succès.");
       setForm(initial);
@@ -83,6 +89,7 @@ export default function PropertySubmissionModal({ isOpen, onClose, reporterName,
         <p className="text-[11px] text-slate-500">{internationalPhoneHint}</p>
         <label className="block text-xs font-semibold text-slate-600">Photo de référence de la maison<input required type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setReferenceImage(event.target.files?.[0] || null)} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-orange-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-orange-700" /><span className="mt-1 block font-normal text-slate-500">JPEG, PNG ou WebP, 5 Mo maximum.</span></label>
         <p className="rounded-xl border border-orange-100 bg-orange-50 p-3 text-xs text-orange-800">En soumettant une maison sur Goying, vous pouvez recevoir une commission de la part de l'équipe Goying, selon les conditions convenues avec l'équipe.</p>
+        <label className="flex items-start gap-2 text-xs leading-relaxed text-slate-600"><input type="checkbox" checked={acceptedPolicy} onChange={(event) => setAcceptedPolicy(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-600" /><span>J&apos;ai lu et j&apos;accepte les politiques relatives aux <button type="button" onClick={onOpenPolicy} className="font-semibold text-orange-700 underline">maisons</button>.</span></label>
         <button disabled={submitting} className="w-full rounded-xl bg-orange-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-60">{submitting ? "Envoi…" : "Soumettre le bien"}</button>
       </form>}
     </div>

@@ -23,9 +23,11 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Chauffeur, SecondaryProvider, UserSession } from "../types";
+import { POLICY_VERSION } from "./PoliciesModal";
 
 interface OnboardingPortalProps {
   onClose: () => void;
+  onOpenPolicy: () => void;
   onRegisterProfessional: (
     session: UserSession,
     newDriver?: Chauffeur,
@@ -42,12 +44,14 @@ function skillsFromInput(value: string, fallback: string[]): string[] {
 
 export default function OnboardingPortal({
   onClose,
+  onOpenPolicy,
   onRegisterProfessional,
 }: OnboardingPortalProps) {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [acceptedProviderPolicy, setAcceptedProviderPolicy] = useState(false);
 
   // Common Form Fields
   const [nom, setNom] = useState("");
@@ -166,6 +170,10 @@ export default function OnboardingPortal({
       alert("Veuillez renseigner votre Nom, Prénom, Email, Mot de passe et Téléphone.");
       return;
     }
+    if (!acceptedProviderPolicy) {
+      setSubmitError("Vous devez accepter la politique applicable aux prestataires.");
+      return;
+    }
     if (!/^\d+$/.test(experienceYears) || Number(experienceYears) > 40) {
       setSubmitError("Indiquez un nombre entier d'années d'expérience compris entre 0 et 40.");
       return;
@@ -192,6 +200,7 @@ export default function OnboardingPortal({
       specialty: selectedSpecialty || "Général",
       providerStatus: "En attente",
       phone: internationalPhone,
+      policyAcceptance: { version: POLICY_VERSION, acceptedAt: new Date().toISOString() },
     };
 
     const parsedExperienceYears = Number(experienceYears);
@@ -1031,6 +1040,10 @@ export default function OnboardingPortal({
                 <p className="text-xs text-slate-500">
                   En soumettant ce formulaire, vous certifiez sur l'honneur l'exactitude des informations fournies. L'équipe Goying effectue un audit systématique avant l'octroi du badge de prestataire certifié.
                 </p>
+                <label className="flex items-start gap-2 text-xs leading-relaxed text-slate-600">
+                  <input type="checkbox" checked={acceptedProviderPolicy} onChange={(event) => setAcceptedProviderPolicy(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500" />
+                  <span>J&apos;accepte la <button type="button" onClick={onOpenPolicy} className="font-semibold text-orange-700 underline">politique des prestataires indépendants</button> applicable à ma demande.</span>
+                </label>
 
                 <div className="flex flex-col sm:flex-row justify-end gap-3">
                   <button

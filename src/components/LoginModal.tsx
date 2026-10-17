@@ -9,6 +9,7 @@ import {
   requestPasswordReset,
 } from "../lib/firebase";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
+import { POLICY_VERSION } from "./PoliciesModal";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface LoginModalProps {
   onLoginSuccess: (session: UserSession) => void;
   onNotify: (message: string) => void;
   onOpenOnboarding: () => void;
+  onOpenPolicy: () => void;
 }
 
 function getAuthenticationErrorMessage(error: unknown): string {
@@ -51,6 +53,7 @@ export default function LoginModal({
   onLoginSuccess,
   onNotify,
   onOpenOnboarding,
+  onOpenPolicy,
 }: LoginModalProps) {
   const [isRegister, setIsRegister] = useState(false);
   const [loginMode, setLoginMode] = useState<"client" | "prestataire">("client");
@@ -62,6 +65,7 @@ export default function LoginModal({
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [passwordResetMessage, setPasswordResetMessage] = useState("");
   const [isGoogleLoginPending, setIsGoogleLoginPending] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   useEffect(() => {
     if (!isOpen) {
@@ -80,6 +84,10 @@ export default function LoginModal({
       setError("Veuillez remplir tous les champs requis.");
       return;
     }
+    if (loginMode === "client" && isRegister && !acceptedTerms) {
+      setError("Vous devez accepter les conditions générales et la politique de confidentialité.");
+      return;
+    }
     const internationalPhone = loginMode === "client" && isRegister ? toInternationalPhone(phone) : null;
     if (loginMode === "client" && isRegister && !internationalPhone) {
       setError(`Numéro WhatsApp invalide. ${internationalPhoneHint}`);
@@ -94,7 +102,10 @@ export default function LoginModal({
         onClose();
       } else if (isRegister) {
         const formattedName = fullName.charAt(0).toUpperCase() + fullName.slice(1);
-        const newSession = await registerClient(formattedName, email, password, internationalPhone!);
+        const newSession = await registerClient(formattedName, email, password, internationalPhone!, {
+          version: POLICY_VERSION,
+          acceptedAt: new Date().toISOString(),
+        });
         onLoginSuccess(newSession);
         onNotify("Votre compte client a été créé avec succès.");
         onClose();
@@ -217,6 +228,12 @@ export default function LoginModal({
                 />
               </div>
             </div>
+          )}
+          {loginMode === "client" && isRegister && (
+            <label className="flex items-start gap-2 text-xs leading-relaxed text-slate-600">
+              <input type="checkbox" checked={acceptedTerms} onChange={(event) => setAcceptedTerms(event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+              <span>J&apos;accepte les <button type="button" onClick={onOpenPolicy} className="font-semibold text-blue-700 underline">conditions générales</button> et la politique de confidentialité de Goying.</span>
+            </label>
           )}
 
           {loginMode === "client" && isRegister && (

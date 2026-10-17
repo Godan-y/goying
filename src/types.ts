@@ -174,6 +174,7 @@ export interface UserSession {
   providerListing?: Chauffeur | SecondaryProvider;
   phone?: string;
   uid?: string;
+  policyAcceptance?: { version: string; acceptedAt: string };
 }
 
 export interface ProfessionalApplication {

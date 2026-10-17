@@ -658,6 +658,43 @@ export async function submitBookingReview(bookingId: string, rating: number, com
   return { rating: payload.rating, reviewsCount: payload.reviewsCount };
 }
 
+export interface PublicReview {
+  id: string;
+  rating: number;
+  comment: string;
+  serviceType: string;
+  itemName: string;
+  createdAt?: string;
+}
+
+export async function getPublicReviews(): Promise<PublicReview[]> {
+  try {
+    const response = await fetch(apiUrl("/api/public-reviews"));
+    const payload = await response.json() as { reviews?: unknown };
+    if (!response.ok || !Array.isArray(payload.reviews)) {
+      throw new Error("Les avis ne sont pas disponibles.");
+    }
+    return payload.reviews.flatMap((value): PublicReview[] => {
+      if (!value || typeof value !== "object") return [];
+      const review = value as FirestoreRecord;
+      const rating = Number(review.rating);
+      const comment = typeof review.comment === "string" ? review.comment.trim() : "";
+      if (!Number.isInteger(rating) || rating < 1 || rating > 5 || !comment) return [];
+      return [{
+        id: String(review.id || ""),
+        rating,
+        comment,
+        serviceType: typeof review.serviceType === "string" ? review.serviceType : "Service Goying",
+        itemName: typeof review.itemName === "string" ? review.itemName : "",
+        createdAt: publicationDate(review.createdAt),
+      }];
+    });
+  } catch (error) {
+    console.error("Error fetching public reviews:", error);
+    throw new Error("Les avis clients sont momentanément indisponibles.");
+  }
+}
+
 export async function uploadPropertySubmissionImage(image: File): Promise<string> {
   if (!["image/jpeg", "image/png", "image/webp"].includes(image.type)) {
     throw new Error("Choisissez une image JPEG, PNG ou WebP.");
@@ -841,13 +878,23 @@ export async function saveUser(session: UserSession) {
   }
 }
 
-export async function registerClient(fullName: string, email: string, password: string, phone?: string): Promise<UserSession> {
+export async function registerClient(
+  fullName: string,
+  email: string,
+  password: string,
+  phone?: string,
+  policyAcceptance?: { version: string; acceptedAt: string },
+): Promise<UserSession> {
   const normalizedEmail = email.toLowerCase().trim();
   const credential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
   const session: UserSession = {
     isLoggedIn: true, email: normalizedEmail, fullName, role: "client", phone, uid: credential.user.uid,
   };
-  await setDoc(doc(db, usersCollection, normalizedEmail), { uid: credential.user.uid, ...session }, { merge: true });
+  await setDoc(doc(db, usersCollection, normalizedEmail), {
+    uid: credential.user.uid,
+    ...session,
+    ...(policyAcceptance ? { policyAcceptance } : {}),
+  }, { merge: true });
   return session;
 }
 
@@ -932,6 +979,7 @@ export async function onboardProfessional(
     phone: session.phone,
     specialty: session.specialty,
     listing,
+    policyAcceptance: session.policyAcceptance,
   });
   if (!response.ok) {
     throw new Error(apiErrorMessage(payload, "Votre dossier n'a pas pu être enregistré."));

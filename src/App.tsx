@@ -18,6 +18,7 @@ import {
   getVehicleSales,
   getChauffeurs,
   getProviders,
+  getPublicReviews,
   getBookings,
   subscribeToBookings,
   addBooking as firebaseAddBooking,
@@ -28,14 +29,17 @@ import {
   submitBookingReview as firebaseSubmitBookingReview,
   logoutCurrentUser,
   refreshProfessionalSession,
+  PublicReview,
 } from "./lib/firebase";
-import TermsModal from "./components/TermsModal";
+import PoliciesModal, { PolicyId } from "./components/PoliciesModal";
+import PoliciesPage from "./components/PoliciesPage";
 import SupportChatModal from "./components/SupportChatModal";
 import PropertySubmissionModal from "./components/PropertySubmissionModal";
 import PartnershipModal from "./components/PartnershipModal";
 import VehicleSubmissionModal from "./components/VehicleSubmissionModal";
 import GoogleTranslateBootstrap from "./components/GoogleTranslateBootstrap";
 import SplashScreen from "./components/SplashScreen";
+import HomeTrustAndReviews from "./components/HomeTrustAndReviews";
 import { CatalogLoadingState, DataErrorState } from "./components/DataLoadingState";
 import {
   Home as HomeIcon,
@@ -70,10 +74,11 @@ export default function App() {
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   const [isVehicleSalesLoading, setIsVehicleSalesLoading] = useState(true);
   const [vehicleSalesError, setVehicleSalesError] = useState<string | null>(null);
+  const [publicReviews, setPublicReviews] = useState<PublicReview[]>([]);
 
   // Navigation State
   const [activeView, setActiveView] = useState<
-    "home" | "immobilier" | "automobile" | "chauffeur" | "autres-services" | "onboarding-pro"
+    "home" | "immobilier" | "automobile" | "chauffeur" | "autres-services" | "onboarding-pro" | "policies"
   >("home");
 
   // User Authentication State (loaded from localStorage with dynamic safety)
@@ -107,7 +112,8 @@ export default function App() {
   const [commissionerAlert, setCommissionerAlert] = useState(false);
   const [bookingToast, setBookingToast] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [openPolicy, setOpenPolicy] = useState<PolicyId | null>(null);
+  const [policyPage, setPolicyPage] = useState<PolicyId>("general");
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isPropertySubmissionOpen, setIsPropertySubmissionOpen] = useState(false);
   const [isVehicleSubmissionOpen, setIsVehicleSubmissionOpen] = useState(false);
@@ -156,6 +162,16 @@ export default function App() {
   useEffect(() => {
     void loadVehicleSales();
   }, [loadVehicleSales]);
+
+  useEffect(() => {
+    let active = true;
+    void getPublicReviews()
+      .then((reviews) => {
+        if (active) setPublicReviews(reviews);
+      })
+      .catch((error) => console.error("Public reviews could not be loaded:", error));
+    return () => { active = false; };
+  }, []);
 
   const loadBookings = useCallback(async (userId: string) => {
     setIsBookingsLoading(true);
@@ -211,12 +227,12 @@ export default function App() {
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      if (activeView === "home" && !showSubmissionPrompt && !isLoginOpen && !isBookingsOpen && !isProfessionalProfileOpen && !isPropertySubmissionOpen && !isAboutOpen && !isTermsOpen && !isSupportOpen) {
+      if (activeView === "home" && !showSubmissionPrompt && !isLoginOpen && !isBookingsOpen && !isProfessionalProfileOpen && !isPropertySubmissionOpen && !isAboutOpen && !openPolicy && !isSupportOpen) {
         setShowSubmissionPrompt(true);
       }
     }, 120000);
     return () => window.clearInterval(timer);
-  }, [activeView, isAboutOpen, isBookingsOpen, isLoginOpen, isProfessionalProfileOpen, isPropertySubmissionOpen, isSupportOpen, isTermsOpen, showSubmissionPrompt]);
+  }, [activeView, isAboutOpen, isBookingsOpen, isLoginOpen, isProfessionalProfileOpen, isPropertySubmissionOpen, isSupportOpen, openPolicy, showSubmissionPrompt]);
 
   // Handle Dynamic Bookings Addition
   const handleAddBooking = async (newBooking: Booking) => {
@@ -326,6 +342,11 @@ export default function App() {
     setBookingToast(message);
     window.setTimeout(() => setBookingToast(null), 4000);
   }, []);
+  const openPolicyPage = (policy: PolicyId) => {
+    setPolicyPage(policy);
+    setActiveView("policies");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   if (isSplashVisible) {
     return <SplashScreen onComplete={handleSplashComplete} />;
@@ -567,48 +588,17 @@ export default function App() {
                 </div>
               </section>
 
-              {/* Security & trust section */}
-              <section className="bg-white border-t border-b border-slate-100 py-12">
-                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                  <div className="grid gap-8 md:grid-cols-3">
-                    <div className="flex items-start gap-3.5">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 shrink-0">
-                        <ShieldCheck className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-900">Prestataires Qualifiés</h4>
-                        <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                          Chaque prestataire inscrit sur Goying fait l'objet d'un audit de sa pièce d'identité et de ses compétences.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3.5">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600 shrink-0">
-                        <Clock className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-900">Gain de temps</h4>
-                        <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                          Plus besoin de chercher des heures. Réservez une voiture, planifiez une visite immobilière ou trouvez un cours de soutien scolaire en quelques clics.
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3.5">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 shrink-0">
-                        <Heart className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-sm font-bold text-slate-900">Confiance Mutuelle</h4>
-                        <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                          Évaluez vos prestations et facilitez le quotidien des professionnels tout comme des clients.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </section>
+              <HomeTrustAndReviews
+                availableListings={properties.length + vehicles.length + vehicleSales.length + chauffeurs.length + providers.length}
+                verifiedProviders={chauffeurs.filter((chauffeur) => chauffeur.verified).length + providers.filter((provider) => provider.verified).length}
+                isCatalogLoading={isCatalogLoading || isVehicleSalesLoading}
+                hasCatalogError={Boolean(catalogError || vehicleSalesError)}
+                reviews={publicReviews}
+                isLoggedIn={session.isLoggedIn}
+                onExploreServices={() => setActiveView("autres-services")}
+                onOpenBookings={() => setIsBookingsOpen(true)}
+                onRequireLogin={() => setIsLoginOpen(true)}
+              />
             </motion.div>
           )}
 
@@ -725,10 +715,17 @@ export default function App() {
             >
               <OnboardingPortal
                 onClose={() => setActiveView("home")}
+                onOpenPolicy={() => setOpenPolicy("providers")}
                 onRegisterProfessional={(newSession, newDriver, newServiceProv, password) => {
                   return handleRegisterProfessional(newSession, newDriver, newServiceProv, password);
                 }}
               />
+            </motion.div>
+          )}
+
+          {activeView === "policies" && (
+            <motion.div key="view-policies" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+              <PoliciesPage policy={policyPage} onSelectPolicy={setPolicyPage} onBack={() => setActiveView("home")} />
             </motion.div>
           )}
 
@@ -751,7 +748,7 @@ export default function App() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-x-8 gap-y-2 text-xs">
+            <div className="flex max-w-3xl flex-wrap gap-x-5 gap-y-2 text-xs">
               <button onClick={() => setIsAboutOpen(true)} className="hover:text-white transition-colors text-left">
                 À propos de nous
               </button>
@@ -761,9 +758,14 @@ export default function App() {
               <button onClick={() => setIsPartnershipOpen(true)} className="hover:text-white transition-colors text-left">
                 Devenir partenaire
               </button>
-              <button onClick={() => setIsTermsOpen(true)} className="hover:text-white transition-colors">
-                Conditions Générales
-              </button>
+              <button onClick={() => openPolicyPage("general")} className="hover:text-white transition-colors">Conditions générales</button>
+              <button onClick={() => openPolicyPage("providers")} className="hover:text-white transition-colors">Prestataires indépendants</button>
+              <button onClick={() => openPolicyPage("placement")} className="hover:text-white transition-colors">Placement ménagères & chauffeurs</button>
+              <button onClick={() => openPolicyPage("propertyRental")} className="hover:text-white transition-colors">Maisons à louer</button>
+              <button onClick={() => openPolicyPage("propertySale")} className="hover:text-white transition-colors">Maisons à vendre</button>
+              <button onClick={() => openPolicyPage("vehicleRental")} className="hover:text-white transition-colors">Voitures à louer</button>
+              <button onClick={() => openPolicyPage("vehicleSale")} className="hover:text-white transition-colors">Voitures à vendre</button>
+              <button onClick={() => openPolicyPage("privacy")} className="hover:text-white transition-colors">Confidentialité</button>
               <button onClick={() => setIsSupportOpen(true)} className="hover:text-white transition-colors">
                 Support client
               </button>
@@ -782,7 +784,7 @@ export default function App() {
 
       {/* Overlay Modals */}
       <AboutSection isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
-      <TermsModal isOpen={isTermsOpen} onClose={() => setIsTermsOpen(false)} />
+      <PoliciesModal isOpen={openPolicy !== null} policy={openPolicy || "general"} onClose={() => setOpenPolicy(null)} />
       <SupportChatModal isOpen={isSupportOpen} onClose={() => setIsSupportOpen(false)} />
       {!isSupportOpen && (
         <button
@@ -803,9 +805,10 @@ export default function App() {
         reporterName={session.fullName}
         reporterPhone={session.phone || ""}
         onNotify={showToast}
+        onOpenPolicy={() => setOpenPolicy("propertyRental")}
       />
       <PartnershipModal isOpen={isPartnershipOpen} onClose={() => setIsPartnershipOpen(false)} />
-      <VehicleSubmissionModal isOpen={isVehicleSubmissionOpen} onClose={() => setIsVehicleSubmissionOpen(false)} session={session} onNotify={showToast} />
+      <VehicleSubmissionModal isOpen={isVehicleSubmissionOpen} onClose={() => setIsVehicleSubmissionOpen(false)} session={session} onNotify={showToast} onOpenPolicy={() => setOpenPolicy("vehicleRental")} />
       {showSubmissionPrompt && !isPropertySubmissionOpen && (
         <div className="fixed bottom-5 right-5 z-40 max-w-xs rounded-2xl border border-orange-100 bg-white p-4 shadow-xl">
           <button aria-label="Fermer" onClick={() => setShowSubmissionPrompt(false)} className="absolute right-2 top-2 text-slate-400"><X className="h-4 w-4" /></button>
@@ -824,6 +827,7 @@ export default function App() {
           setIsLoginOpen(false);
           setActiveView("onboarding-pro");
         }}
+        onOpenPolicy={() => setOpenPolicy("general")}
       />
 
       <BookingsTracker

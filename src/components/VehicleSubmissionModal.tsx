@@ -4,12 +4,14 @@ import { submitVehicle, uploadVehicleSubmissionImage } from "../lib/firebase";
 import { internationalPhoneHint, normalizePhoneInput, toInternationalPhone } from "../lib/phone";
 import { ACTIVITY_COUNTRIES, citiesForCountry, cityForArea } from "../lib/geography";
 import { UserSession } from "../types";
+import { POLICY_VERSION } from "./PoliciesModal";
 
 interface VehicleSubmissionModalProps {
   isOpen: boolean;
   onClose: () => void;
   session: UserSession;
   onNotify: (message: string) => void;
+  onOpenPolicy: () => void;
 }
 
 const initialForm = {
@@ -19,9 +21,10 @@ const initialForm = {
   listingIntent: "À vendre", desiredPrice: "", pricePeriod: "Vente",
   additionalInformation: "", country: "", city: "", commune: "", visitAddress: "", availableDays: "", availableHours: "", locationComment: "",
   consent: false,
+  policyAccepted: false,
 };
 
-export default function VehicleSubmissionModal({ isOpen, onClose, session, onNotify }: VehicleSubmissionModalProps) {
+export default function VehicleSubmissionModal({ isOpen, onClose, session, onNotify, onOpenPolicy }: VehicleSubmissionModalProps) {
   const [form, setForm] = useState(initialForm);
   const [photos, setPhotos] = useState<File[]>([]);
   const [error, setError] = useState("");
@@ -71,7 +74,7 @@ export default function VehicleSubmissionModal({ isOpen, onClose, session, onNot
     try {
       requestId.current ??= crypto.randomUUID();
       const photoUrls = await Promise.all(photos.map(uploadVehicleSubmissionImage));
-      await submitVehicle({ ...form, ownerPhone, photoUrls, submissionRequestId: requestId.current });
+      await submitVehicle({ ...form, ownerPhone, photoUrls, submissionRequestId: requestId.current, policyAcceptance: { version: POLICY_VERSION, acceptedAt: new Date().toISOString(), policy: "vehicle-submission" } });
       setSubmitted(true);
       onNotify("Votre demande de véhicule a été envoyée avec succès.");
     } catch (submissionError) {
@@ -130,6 +133,7 @@ export default function VehicleSubmissionModal({ isOpen, onClose, session, onNot
           <Field label="Heures disponibles *" value={form.availableHours} placeholder="Ex : 9h à 17h" onChange={(value) => update("availableHours", value)} />
         </div><label className="block text-xs font-semibold text-slate-600">Commentaire concernant la localisation<textarea rows={2} maxLength={800} value={form.locationComment} onChange={(event) => update("locationComment", event.target.value)} className="mt-1 block w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm" /></label></fieldset>
         <label className="flex items-start gap-2 text-xs font-medium text-slate-700"><input required type="checkbox" checked={form.consent} onChange={(event) => update("consent", event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600" />J’accepte d’être contacté par l’équipe Goying concernant cette demande.</label>
+        <label className="flex items-start gap-2 text-xs font-medium leading-relaxed text-slate-700"><input required type="checkbox" checked={form.policyAccepted} onChange={(event) => update("policyAccepted", event.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-emerald-600" /><span>J&apos;accepte les politiques relatives aux <button type="button" onClick={onOpenPolicy} className="font-semibold text-emerald-700 underline">véhicules</button>.</span></label>
         <button disabled={submitting} className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-60">{submitting ? "Envoi en cours…" : "Envoyer ma demande"}</button>
       </form>}
     </section>
