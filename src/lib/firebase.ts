@@ -617,7 +617,7 @@ async function getProfessionalSessionFromApi(session: UserSession): Promise<User
 
 export async function createPropertyBooking(booking: unknown): Promise<string> {
   const { response, payload } = await authenticatedPost("/api/property-bookings", booking);
-  if (!response.ok || !payload.id) throw new Error(String(payload.error || "La réservation n'a pas pu être enregistrée."));
+  if (!response.ok || !payload.id) throw new Error(apiErrorMessage(payload, "La réservation n'a pas pu être enregistrée."));
   return String(payload.id);
 }
 
@@ -772,7 +772,7 @@ export async function requestProviderCompletion(bookingId: string, providerId: s
   if (!response.ok) throw new Error(String(payload.error || payload.detail || "La fin de prestation n'a pas pu être signalée."));
 }
 
-async function uploadProfessionalImages(images: File[]): Promise<string[]> {
+async function uploadProfessionalImages(images: File[], uploadType: "avatar" | "portfolio" = "portfolio"): Promise<string[]> {
   if (images.length === 0) return [];
   for (const image of images) {
     if (!image.name || !["image/jpeg", "image/png", "image/webp"].includes(image.type)) {
@@ -783,27 +783,22 @@ async function uploadProfessionalImages(images: File[]): Promise<string[]> {
     }
   }
   const { response, payload } = await authenticatedPost("/api/portfolio-uploads", {
-    files: images.map((image) => ({
-      fileName: image.name,
-      contentType: image.type,
-      fileSize: image.size,
-    })),
+    uploadType,
+    images: images.map((image) => ({ contentType: image.type })),
   });
   const uploads = payload.uploads as Array<{
-    uploadUrl: string;
+    url: string;
+    fields: Record<string, string>;
     publicUrl: string;
-    method: "PUT";
-    headers: Record<string, string>;
   }> | undefined;
   if (!response.ok || !uploads || uploads.length !== images.length) {
     throw new Error(apiErrorMessage(payload, "Impossible de préparer l'envoi des images."));
   }
   await Promise.all(uploads.map(async (upload, index) => {
-    const uploadResponse = await fetch(upload.uploadUrl, {
-      method: upload.method,
-      headers: upload.headers,
-      body: images[index],
-    });
+    const form = new FormData();
+    Object.entries(upload.fields).forEach(([key, value]) => form.append(key, value));
+    form.append("file", images[index]);
+    const uploadResponse = await fetch(upload.url, { method: "POST", body: form });
     if (!uploadResponse.ok) {
       throw new Error("Impossible d'envoyer une image vers le stockage.");
     }
@@ -829,7 +824,7 @@ export async function updateProfessionalProfile(
 
   const [uploadedPortfolio, uploadedAvatar] = await Promise.all([
     uploadProfessionalImages(newPortfolioImages),
-    newAvatarImage ? uploadProfessionalImages([newAvatarImage]) : Promise.resolve([]),
+    newAvatarImage ? uploadProfessionalImages([newAvatarImage], "avatar") : Promise.resolve([]),
   ]);
   const portfolio = [...profile.portfolio, ...uploadedPortfolio].slice(0, 6);
   const existingProfilePhoto = listing.photo_profil || "";

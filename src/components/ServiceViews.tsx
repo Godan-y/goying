@@ -227,7 +227,7 @@ export function RealEstateView({ properties, onBookProperty, onRequireLogin, ses
       }, 2500);
     } catch (error) {
       console.error("Error adding property booking:", error);
-      setBookingError("La réservation n'a pas pu être enregistrée. Vérifiez votre connexion et réessayez.");
+      setBookingError(error instanceof Error ? error.message : "La réservation n'a pas pu être enregistrée. Réessayez.");
     } finally {
       setIsSubmitting(false);
     }
@@ -571,7 +571,7 @@ export function CarRentalView({
 }: CarRentalViewProps) {
   const [filterCat, setFilterCat] = useState<string>("Tous");
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-  const [rentDays, setRentDays] = useState(1);
+  const [rentDays, setRentDays] = useState("1");
   const [rentDate, setRentDate] = useState("");
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
@@ -642,7 +642,12 @@ export function CarRentalView({
       return;
     }
 
-    const totalCost = selectedVehicle.pricePerDay * rentDays;
+    const days = Number(rentDays);
+    if (!Number.isInteger(days) || days < 1 || days > 30) {
+      setRentError("Choisissez une durée comprise entre 1 et 30 jours.");
+      return;
+    }
+    const totalCost = selectedVehicle.pricePerDay * days;
 
     const newBooking: Booking = {
       id: `book-car-${Date.now()}`,
@@ -650,7 +655,7 @@ export function CarRentalView({
       itemName: `${selectedVehicle.brand} ${selectedVehicle.model}`,
       date: rentDate,
       status: "Confirmé",
-      details: `Location confirmée pour une durée de ${rentDays} jour(s). Point de retrait : Agence Goying Auto.`,
+      details: `Location confirmée pour une durée de ${days} jour(s). Point de retrait : Agence Goying Auto.`,
       costInfo: `${totalCost}${selectedVehicle.currency} (${selectedVehicle.pricePerDay}€/j)`,
       clientName: clientName.trim(),
       clientEmail: session.email || undefined,
@@ -678,7 +683,7 @@ export function CarRentalView({
       setTimeout(() => {
         setRentSuccess(false);
         setSelectedVehicle(null);
-        setRentDays(1);
+        setRentDays("1");
         setRentDate("");
       }, 2500);
     } catch (error) {
@@ -1095,7 +1100,7 @@ export function CarRentalView({
                         max={30}
                         required
                         value={rentDays}
-                        onChange={(e) => setRentDays(parseInt(e.target.value) || 1)}
+                        onChange={(e) => setRentDays(e.target.value)}
                         className="block w-full rounded-xl border border-slate-200 py-2 px-3 text-xs focus:outline-none focus:border-emerald-500"
                       />
                     </div>
@@ -1105,7 +1110,7 @@ export function CarRentalView({
                   <div className="flex flex-col gap-1 rounded-xl border border-slate-100 bg-slate-50 p-3 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-xs font-medium text-slate-500">Estimation totale :</span>
                     <span className="font-display font-extrabold text-slate-900 text-sm">
-                      {selectedVehicle.pricePerDay * rentDays} {selectedVehicle.currency}
+                      {selectedVehicle.pricePerDay * (Number(rentDays) || 0)} {selectedVehicle.currency}
                     </span>
                   </div>
 
